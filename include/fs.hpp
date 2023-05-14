@@ -15,7 +15,11 @@ class FileSystem
         FileSystem(char *path);
         ~FileSystem();
 
-        bool create(std::string path, std::string filename, bool isDirectory = false);
+        bool create(std::string path, std::string filename); 
+        bool createDirectory(std::string path, std::string filename); 
+        bool remove(std::string dirname);
+        bool removeDirecotry(std::string dirname);
+        std::vector<fileData_t> list(std::string path);
         vd_size_t open(std::string path); // return fd?? // path is just a filename for now
         void close(std::string path);
         void close(vd_size_t fd);
@@ -43,6 +47,8 @@ class FileSystem
         fileData_t __getFolder(std::string path, fileData_t folder = fileData_t());
 
         void __registerFile(fileData_t file);
+
+        bool __create(std::string path, std::string filename, bool isDirectory); 
 
     private:
         vd_size_t _nextBlock = MAINFOLDER_BLOCK + 1;

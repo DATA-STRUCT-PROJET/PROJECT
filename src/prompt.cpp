@@ -56,10 +56,12 @@ PromptCommandResultEnum Prompt::process(PromptCommand& command)
         }
 		break;
 	case LS:
-		// TODO(ehdgks0627): Implement LS
+		for (auto &it : fs.list(currentDirectory)) {
+			os << it.name << '\t';
+		}
 		break;
 	case TREE:
-		// TODO(ehdgks0627): Implement TREE
+		// TODO(ehdgks0627): Build TREE, and print
 		break;
 	case CAT:
         arg = command.getArgs().at(0);
@@ -73,21 +75,31 @@ PromptCommandResultEnum Prompt::process(PromptCommand& command)
 		break;
 	case TOUCH:
 		arg = command.getArgs().at(0);
-        if (fs.create(currentDirectory, arg, false)) {
+        if (fs.create(currentDirectory, arg)) {
             return PromptCommandResultEnum::SUCCESS;
         } else {
             return PromptCommandResultEnum::FAILURE;
         }
 		break;
 	case RMDIR:
-		// TODO(ehdgks0627): Implement RMDIR
+		arg = command.getArgs().at(0);
+		if (fs.removeDirecotry(arg)) {
+            return PromptCommandResultEnum::SUCCESS;
+        } else {
+            return PromptCommandResultEnum::FAILURE;
+        }
 		break;
 	case RM:
-		// TODO(ehdgks0627): Implement RM
+		arg = command.getArgs().at(0);
+		if (fs.remove(arg)) {
+            return PromptCommandResultEnum::SUCCESS;
+        } else {
+            return PromptCommandResultEnum::FAILURE;
+        }
 		break;
 	case MKDIR:
         arg = command.getArgs().at(0);
-        if (fs.create(currentDirectory, arg, true)) {
+        if (fs.create(currentDirectory, arg)) {
             return PromptCommandResultEnum::SUCCESS;
         } else {
             return PromptCommandResultEnum::FAILURE;

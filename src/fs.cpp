@@ -75,7 +75,17 @@ fileData_t FileSystem::__getFolder(std::string path, fileData_t folder)
     return fileData_t();
 }
 
-bool FileSystem::create(std::string path, std::string filename, bool isDirectory)
+bool FileSystem::create(std::string path, std::string filename)
+{
+    return __create(path, filename, false);
+}
+
+bool FileSystem::createDirectory(std::string path, std::string filename)
+{
+    return __create(path, filename, true);
+}
+
+bool FileSystem::__create(std::string path, std::string filename, bool isDirectory)
 {
     fileData_t file;
     file.path = path;
@@ -92,6 +102,24 @@ bool FileSystem::create(std::string path, std::string filename, bool isDirectory
 
     __registerMagicBlock();
     return true;
+}
+
+bool FileSystem::remove(std::string dirname)
+{
+
+    return false;
+}
+
+bool FileSystem::removeDirecotry(std::string dirname)
+{
+
+    return false;
+}
+
+std::vector<fileData_t> FileSystem::list(std::string path)
+{
+    return __getFolder(path).files;
+    // TODO(ehdgks0627): Should return reference?
 }
 
 vd_size_t FileSystem::open(std::string path)
