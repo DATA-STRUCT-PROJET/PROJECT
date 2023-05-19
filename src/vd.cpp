@@ -4,9 +4,18 @@
 #include <iostream>
 #include <unistd.h>
 
-virtualDisk::virtualDisk(char *path)
+virtualDisk::virtualDisk(vd_size_t nb_block, vd_size_t block_len)
+: _nb_block(nb_block), _blocks_len(block_len * DEFAULT_BLOCK_SIZE)
 {
-    MagicBlock_t magicBlock;
+    _magical = new char[nb_block * _blocks_len];
+    std::cout << nb_block * _blocks_len << std::endl;
+    std::cout << "Creating new Virtual Disk with size of " << nb_block << " Blocks of ";
+    if (_magical == nullptr)
+        throw std::runtime_error(std::string("failed to allocated disk memory of size") + std::to_string(nb_block * _blocks_len));
+}
+
+virtualDisk::virtualDisk(const char *path)
+{
     std::ifstream file(path, std::ios::binary | std::ios::in | std::ios::ate);
 
     if (!file.is_open()) throw std::runtime_error("error open the save failed");
@@ -16,13 +25,12 @@ virtualDisk::virtualDisk(char *path)
         std::cout << "ok" << size << std::endl;
 
         _magical = new char[size];
-        file.seekg (0, std::ios::beg);
+        file.seekg(0, std::ios::beg);
         file.read(_magical, size);
         file.close();
 
         _nb_block = *(vd_size_t*)_magical;
         _blocks_len = *(vd_size_t*)(_magical + sizeof(vd_size_t));
-
     } catch(...) {
         throw std::runtime_error("error reading the save");
     }
@@ -44,12 +52,12 @@ size_t virtualDisk::__write(vd_size_t block, void* ptr, vd_size_t len, vd_size_t
     return len;
 }
 
-bool virtualDisk::__save(char *path)
+bool virtualDisk::__save(const char *path)
 {
     std::ofstream file(path, std::ios::out | std::ios::binary);
     
     if (!file.is_open()) return false;
-    
+
     try {
         file.write(_magical, _nb_block * _blocks_len);
         file.close();

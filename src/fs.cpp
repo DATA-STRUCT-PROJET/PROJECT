@@ -1,41 +1,20 @@
 #include "fs.hpp"
 #include <iostream>
-#include <sstream>
-
-std::vector<std::string> split(const std::string &s, char delim)
-{
-    std::vector<std::string> result;
-    std::stringstream ss (s);
-    std::string item;
-
-    while (getline (ss, item, delim)) {
-        result.push_back (item);
-    }
-
-    return result;
-}
 
 FileSystem::FileSystem(vd_size_t nb_block, vd_size_t block_len)
     : vd(virtualDisk(nb_block, block_len))
 {
-    std::cout << nb_block << " " << block_len * 1024 << std::endl;
-    _magicBlock._nb_block = nb_block;
-    _magicBlock._blocks_len = block_len * 1024;
-    _nb_max_files = nb_block - 1;
-
-    fileData_t mainFolder;
-    mainFolder.name = ".";
-    mainFolder.block = MAINFOLDER_BLOCK;
-    mainFolder.isDirectory = true;
-
-    __registerFile(mainFolder);
+    std::cout << "Creating new Filesystem with " << nb_block << " different blocks with a size of " << block_len * DEFAULT_BLOCK_SIZE << " each." << std::endl;
+    _magicBlock._nb_blocks = nb_block;
+    _magicBlock._blocks_size = block_len * DEFAULT_BLOCK_SIZE;
+    // _nb_max_files = nb_block - 1;
     __registerMagicBlock();
 }
 
-FileSystem::FileSystem(char *path) : vd(virtualDisk(path))
+FileSystem::FileSystem(std::string path) : vd(virtualDisk(path.c_str()))
 {
     __getMagicBlock();
-    _nb_max_files = _magicBlock._nb_block - 1;
+    // _nb_max_files = _magicBlock._nb_blocks - 1;
     // debug();
 }
 
@@ -43,152 +22,117 @@ FileSystem::~FileSystem()
 {
 }
 
-void FileSystem::__registerFile(fileData_t folder)
+bool FileSystem::create(std::string filename)
 {
-    vd.__write(folder.block, &folder, SIZEOF_FILEDADATA);
-    vd.__write(folder.block, folder.files.data(), folder.files.size() * sizeof(fileData_t), SIZEOF_FILEDADATA);
-}
+    if (_magicBlock._nb_blocks -1 == _magicBlock._nb_used_blocks)
+        return false;
 
-fileData_t FileSystem::__getFolder(vd_size_t block)
-{
-    fileData_t folder;
-    vd.__read(block, &folder, SIZEOF_FILEDADATA);
-    folder.files.resize(folder.nb_files);
-    vd.__read(block, folder.files.data(), folder.nb_files * sizeof(fileData_t), SIZEOF_FILEDADATA);
-
-    return folder;
-}
-
-fileData_t FileSystem::__getFolder(std::string path, fileData_t folder)
-{
-    if (folder.block == (vd_size_t)-1)
-        folder = __getFolder(MAINFOLDER_BLOCK);
-
-    if (path.empty()) return folder;
-    auto nPath = getBefore(path, '/');
-
-    for (auto &it : folder.files) {
-        if (it.name == nPath && it.isDirectory) {
-            return __getFolder(getAfter(path, '/'), it);
-        }
-    }
-    return fileData_t();
-}
-
-bool FileSystem::create(std::string path, std::string filename)
-{
-    return __create(path, filename, false);
-}
-
-bool FileSystem::createDirectory(std::string path, std::string filename)
-{
-    return __create(path, filename, true);
-}
-
-bool FileSystem::__create(std::string path, std::string filename, bool isDirectory)
-{
     fileData_t file;
-    file.path = path;
+    // memcpy(file.name, filename, 16);
     file.name = filename;
-    file.isDirectory = isDirectory;
-    file.block = __getBlock();
+    std::fill_n(file.block, MAX_NUMBER_BLOCK, VD_NAN);
+    file.block[0] = __getBlock();
 
-    fileData_t folder = __getFolder(path);
-    folder.files.push_back(file);
-    folder.nb_files++;
-
-    __registerFile(file);
-    __registerFile(folder);
-
+    _magicBlock.files.push_back(file);
+    vd.__write(file.block[0], &file, sizeof(fileData_t));
     __registerMagicBlock();
     return true;
 }
 
-bool FileSystem::remove(std::string dirname)
-{
-
-    return false;
-}
-
-bool FileSystem::removeDirecotry(std::string dirname)
-{
-
-    return false;
-}
-
-std::vector<fileData_t> FileSystem::list(std::string path)
-{
-    return __getFolder(path).files;
-    // TODO(ehdgks0627): Should return reference?
-}
-
 vd_size_t FileSystem::open(std::string path)
 {
-    // for (auto it : _magicBlock.files) {
-    //     if (it.name == path) {
-    //         auto fd = __newFd();
-    //         _fds[fd] = it;
-    //         return fd;
-    //     }
-    // }
-    // std::cerr << "fd failed for file:\t " << path << std::endl;
-    // return -1;
+    for (auto it : _magicBlock.files) {
+        // if (strcmp(it.name, path) == 0) {
+        if (it.name == path) {
+            auto fd = __newFd();
+            _fds[fd] = it;
+            return fd;
+        }
+    }
+    std::cerr << "fd failed for file:\t " << path << std::endl;
     return -1;
 }
 
 void FileSystem::debug()
 {
     std::cout << "magic block:" << std::endl;
-    std::cout << "nb block:\t" << _magicBlock._nb_block << std::endl;
-    std::cout << "blocks_len :\t" << _magicBlock._blocks_len << std::endl;
-    std::cout << "nb_files :\t" << _magicBlock.nb_files << std::endl;
-    std::cout << "nb file max:\t" << _nb_max_files << std::endl;
+    std::cout << "nb blocks:\t" << _magicBlock._nb_blocks << std::endl;
+    std::cout << "_blocks_size :\t" << _magicBlock._blocks_size << std::endl;
+    std::cout << "nb_files :\t" << _magicBlock.files.size() << std::endl;
+    std::cout << "_nb_used_blocks:\t" << _magicBlock._nb_used_blocks << std::endl;
 
-    __printFileStat(__getFolder(""));
-    for (const auto &it : __getFolder("").files)
+    for (const auto &it : _magicBlock.files)
         __printFileStat(it);
 }
 
 vd_size_t FileSystem::write(vd_size_t fd, void *ptr, vd_size_t len)
 {
-    // fileData_t file = __getFileFromFD(fd);
+    fileData_t& file = __getFileFromFD(fd);
+    vd_size_t tmpLen = 0;
 
-    // if (file.block == (vd_size_t)-1) return 0;
+    if (file.block[0] == VD_NAN) return 0;
 
-    // if (len + sizeof(fileData_t) > _magicBlock._blocks_len)
-    //     len = _magicBlock._blocks_len - sizeof(fileData_t);
-    // file.size = len;
+    if (len + sizeof(fileData_t) > _magicBlock._blocks_size * MAX_NUMBER_BLOCK - sizeof(fileData_t))
+        len = _magicBlock._blocks_size * MAX_NUMBER_BLOCK - sizeof(fileData_t);
+    
+    file.size = len;
+    vd.__write(file.block[0], &file, sizeof(fileData_t));
 
-    // vd.__write(file.block, &file, sizeof(fileData_t));
-    // vd.__write(file.block, ptr, len, sizeof(fileData_t));
+    len -= sizeof(fileData_t);
+    tmpLen = (len > _magicBlock._blocks_size - sizeof(fileData_t)) ? _magicBlock._blocks_size - sizeof(fileData_t) : len;
+    vd.__write(file.block[0], ptr, tmpLen, sizeof(fileData_t));
 
-    // for (auto &it : _magicBlock.files) {
-    //     if (it.block == file.block)
-    //         it = file;
-    // }
-    // return len;
-    return -1;
+    for (int i = 0; ++i && len > 0 && i < MAX_NUMBER_BLOCK; len -= tmpLen) {
+        if (file.block[i] == VD_NAN) {
+           file.block[i] = __getBlock(); 
+        }
+        tmpLen = (len > _magicBlock._blocks_size) ? _magicBlock._blocks_size : len;
+        vd.__write(file.block[i], ptr, tmpLen);
+    }
+
+    vd.__write(file.block[0], &file, sizeof(fileData_t));
+
+    for (auto &it : _magicBlock.files) {
+        if (it.block[0] == file.block[0]) {
+            it = file;
+            std::cout << "found it" << std::endl;
+            __registerMagicBlock();
+            break;
+        }
+    }
+
+    return len;
 }
 
-
-vd_size_t FileSystem::read(vd_size_t fd, void *ptr, vd_size_t len)
+vd_size_t FileSystem::read(vd_size_t fd, char *ptr, vd_size_t len)
 {
-    // fileData_t file = __getFileFromFD(fd);
+    fileData_t file = __getFileFromFD(fd);
+    int tmpLen = 0;
 
-    // if (file.block == (vd_size_t)-1) return 0;
+    if (file.block[0] == VD_NAN) return 0;
 
-    // if (len + sizeof(fileData_t) > _magicBlock._blocks_len)
-    //     len = _magicBlock._blocks_len - sizeof(fileData_t);
+    if (len + sizeof(fileData_t) > _magicBlock._blocks_size * MAX_NUMBER_BLOCK - sizeof(fileData_t))
+        len = _magicBlock._blocks_size * MAX_NUMBER_BLOCK - sizeof(fileData_t);
 
-    // vd.__read(file.block, ptr, len, sizeof(fileData_t));
+    tmpLen = (len > _magicBlock._blocks_size - sizeof(fileData_t)) ? _magicBlock._blocks_size - sizeof(fileData_t) : len;
+    vd.__read(file.block[0], ptr, tmpLen, sizeof(fileData_t));
 
-    // return len;
-    return -1;
+    for (int i = 0; ++i && len > 0 && i < MAX_NUMBER_BLOCK; len -= tmpLen) {
+        if (file.block[i] == VD_NAN) {
+            return -1;
+        }
+        ptr += tmpLen;
+        tmpLen = (len > _magicBlock._blocks_size) ? _magicBlock._blocks_size : len;
+        vd.__read(file.block[i], ptr, tmpLen);
+    }
+
+    return len;
 }
 
 fileData_t FileSystem::stat(std::string path)
 {
-    for (auto &it : __getFolder("").files) {
+    for (auto &it : _magicBlock.files) {
+        // if (strcmp(it.name, path) == 0) {
         if (it.name == path) {
             return it;
         }
@@ -198,15 +142,14 @@ fileData_t FileSystem::stat(std::string path)
 
 /*------------------------------------------------------------------*/
 
-fileData_t FileSystem::__getFileFromFD(vd_size_t fd)
+fileData_t &FileSystem::__getFileFromFD(vd_size_t fd)
 {
-    fileData_t file;
     try {
-        file = _fds.at(fd);
+        fileData_t& file = _fds.at(fd);
+        return file;
     } catch (std::out_of_range &e) {
-        file.block = -1;
+        throw std::runtime_error("fd not found");
     }
-    return file;
 }
 
 vd_size_t FileSystem::__newFd()
@@ -223,19 +166,42 @@ vd_size_t FileSystem::__newFd()
 
 void FileSystem::__registerMagicBlock()
 {
-    vd.__write(MAGICBLOCK_BLOCK, &_magicBlock, sizeof(MagicBlock_t));
+    vd.__write(MAGICBLOCK_BLOCK, &_magicBlock, sizeof(vd_size_t) * 3);
+    //vd.__write(MAGICBLOCK_BLOCK, _magicBlock.files.data(), _magicBlock.files.size() * sizeof(fileData_t), sizeof(vd_size_t) * 3);
+    
+    for(int i = 0; i < _magicBlock.files.size(); i++) {
+        vd.__write(MAGICBLOCK_BLOCK, &_magicBlock.files[i], sizeof(fileData_t), sizeof(vd_size_t) * 3 + sizeof(fileData_t) * i);
+    }
 }
 
 void FileSystem::__getMagicBlock()
 {
-    vd.__read(MAGICBLOCK_BLOCK, &_magicBlock, sizeof(MagicBlock_t));
+    vd.__read(MAGICBLOCK_BLOCK, &_magicBlock, sizeof(vd_size_t) * 3);
+    _magicBlock.files.resize(_magicBlock._nb_blocks - 1);
+    std::cout << "nb block :" << _magicBlock._nb_used_blocks <<std::endl;;
+
+    for (int i = 1; i < _magicBlock._nb_used_blocks; i++) {
+        std::cout << "i:" << i << std::endl;
+        char tmpPtr[5];
+        vd.__read(i, tmpPtr, 5);
+        if (std::strcmp(tmpPtr, "CONF\0") == 0) {
+            fileData_t tmp;
+            vd.__read(i, &tmp, sizeof(fileData_t));
+            __printFileStat(tmp);
+            _magicBlock.files.push_back(tmp);
+        }
+        else {
+            std::cout << "conf didint found" << std::endl;
+        }
+    }
 }
 
 vd_size_t FileSystem::__getBlock()
 {
-    if (_nextBlock == _nb_max_files + 1)
+    if (_nextBlock == _magicBlock._nb_blocks + 1)
         return -1;
     _nextBlock++;
+    _magicBlock._nb_used_blocks++;
     return _nextBlock -1;
 }
 
@@ -243,10 +209,8 @@ void FileSystem::__printFileStat(const fileData_t &file)
 {
     std::cout << "file name=" << file.name;
     std::cout << "\t file size=" << file.size;
-    std::cout << "\tblok used=" << file.block << std::endl;
-}
-
-void FileSystem::close(vd_size_t fd)
-{
-    // TODO(ehdgks0627)
+    std::cout << "\tblok used=";
+    for (int i = 0; i < MAX_NUMBER_BLOCK; i++)
+        std::cout <<  file.block[i] << ";";
+    std::cout << std::endl;
 }
