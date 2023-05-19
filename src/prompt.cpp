@@ -92,7 +92,7 @@ PromptCommandResultEnum Prompt::fnCat(PromptCommand &command)
 {
     vd_size_t fd = 0;
 
-    if (!command.getArgs().size() != 1)
+    if (command.getArgs().size() != 1)
         return PromptCommandResultEnum::ERROR;
     fd = fs.open(command.getArgs().at(0));
     // while (!fs.eof(fd)) { TODO(ehdgks0627)
@@ -105,28 +105,28 @@ PromptCommandResultEnum Prompt::fnCat(PromptCommand &command)
 
 PromptCommandResultEnum Prompt::fnTouch(PromptCommand &command)
 {
-    if (!command.getArgs().size() != 1)
+    if (command.getArgs().size() != 1)
         return PromptCommandResultEnum::ERROR;
     return static_cast<PromptCommandResultEnum>(fs.create(currentDirectory, command.getArgs().at(0)));
 }
 
 PromptCommandResultEnum Prompt::fnRmdir(PromptCommand &command)
 {
-    if (!command.getArgs().size() != 1)
+    if (command.getArgs().size() != 1)
         return PromptCommandResultEnum::ERROR;
     return static_cast<PromptCommandResultEnum>(fs.removeDirecotry(command.getArgs().at(0)));
 }
 
 PromptCommandResultEnum Prompt::fnRm(PromptCommand &command)
 {
-    if (!command.getArgs().size() != 1)
+    if (command.getArgs().size() != 1)
         return PromptCommandResultEnum::ERROR;
     return static_cast<PromptCommandResultEnum>(fs.remove(command.getArgs().at(0)));
 }
 
 PromptCommandResultEnum Prompt::fnMkdir(PromptCommand &command)
 {
-    if (!command.getArgs().size() != 1)
+    if (command.getArgs().size() != 1)
         return PromptCommandResultEnum::ERROR;
     return static_cast<PromptCommandResultEnum>(fs.create(currentDirectory, command.getArgs().at(0)));
 }
