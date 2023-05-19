@@ -12,6 +12,7 @@ struct fileData_t {
     std::string name;
     vd_size_t block[MAX_NUMBER_BLOCK] = {VD_NAN};
     vd_size_t size = 0;
+    bool isDirectory = false;
 };
 
 struct MagicBlock_t {
@@ -30,11 +31,8 @@ class FileSystem
         ~FileSystem();
 
         bool create(std::string filename);
-        bool remove(std::string filename); // not implemented yet
 
         vd_size_t open(std::string path); // return fd?? // path is just a filename for now
-        void close(std::string path); // not implemented yet
-        void close(vd_size_t fd); // not implemented yet
         
         vd_size_t write(vd_size_t fd, void *ptr, vd_size_t len);
         vd_size_t read(vd_size_t fd, char *ptr, vd_size_t len);
@@ -45,6 +43,40 @@ class FileSystem
         bool save(std::string path) {
             __registerMagicBlock();
             return vd.__save(path.c_str());
+        }
+
+        // for promp commands (to review and remake later)
+
+        void close(std::string path) {
+            return;
+        }
+
+        void close(vd_size_t fd) {
+            return;
+        }
+
+        bool remove(std::string filename) {
+            return false;
+        }
+
+        bool create(std::string path, std::string filename) {
+            return create(filename);
+        }
+
+        bool removeDirecotry(std::string filename) {
+            return removeDirecotry();
+        }
+
+        bool removeDirecotry(fileData_t current = fileData_t()) {
+            return false;
+        }
+
+        std::vector<fileData_t> list(std::string filename) {
+            return list();
+        }
+
+        std::vector<fileData_t> list(fileData_t current = fileData_t()) {
+            return _magicBlock.files;
         }
 
     private:
