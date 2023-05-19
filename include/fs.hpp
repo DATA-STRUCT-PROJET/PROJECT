@@ -33,7 +33,9 @@ class FileSystem
         bool create(std::string filename);
 
         vd_size_t open(std::string path); // return fd?? // path is just a filename for now
-        
+        void close(std::string path);
+        void close(vd_size_t fd);
+
         vd_size_t write(vd_size_t fd, void *ptr, vd_size_t len);
         vd_size_t read(vd_size_t fd, char *ptr, vd_size_t len);
 
@@ -47,28 +49,20 @@ class FileSystem
 
         // for promp commands (to review and remake later)
 
-        void close(std::string path) {
-            return;
-        }
-
-        void close(vd_size_t fd) {
-            return;
-        }
-
         bool remove(std::string filename) {
             return false;
         }
 
         bool create(std::string path, std::string filename) {
-            return create(filename);
+            return create(filename); // directory not implemented yet
         }
 
         bool removeDirecotry(std::string filename) {
-            return removeDirecotry();
+            return removeDirecotry(); // directory not implemented yet
         }
 
         bool removeDirecotry(fileData_t current = fileData_t()) {
-            return false;
+            return false; // directory not implemented yet
         }
 
         std::vector<fileData_t> list(std::string filename) {

@@ -41,8 +41,10 @@ bool FileSystem::create(std::string filename)
 
 vd_size_t FileSystem::open(std::string path)
 {
+    for (auto &[key, val] : _fds)
+        if (val.name == path) return key;
+
     for (auto it : _magicBlock.files) {
-        // if (strcmp(it.name, path) == 0) {
         if (it.name == path) {
             auto fd = __newFd();
             _fds[fd] = it;
@@ -51,6 +53,25 @@ vd_size_t FileSystem::open(std::string path)
     }
     std::cerr << "fd failed for file:\t " << path << std::endl;
     return -1;
+}
+
+void FileSystem::close(std::string path) {
+    for (auto it = _fds.begin(); it != _fds.end(); it++) {
+        if (it->second.name == path) {
+            _fds.erase(it);
+            break;
+        }
+    }
+    //not found
+}
+
+void FileSystem::close(vd_size_t fd) {
+    for (auto &[key, _] : _fds)
+        if (key == fd) {
+            _fds.erase(fd);
+            break;
+        };
+    //not found
 }
 
 void FileSystem::debug()
@@ -72,10 +93,12 @@ vd_size_t FileSystem::write(vd_size_t fd, void *ptr, vd_size_t len)
 
     if (file.block[0] == VD_NAN) return 0;
 
-    if (len + sizeof(fileData_t) > _magicBlock._blocks_size * MAX_NUMBER_BLOCK - sizeof(fileData_t))
-        len = _magicBlock._blocks_size * MAX_NUMBER_BLOCK - sizeof(fileData_t);
-    
-    file.size = len;
+    len += sizeof(fileData_t);
+
+    if (len > _magicBlock._blocks_size * MAX_NUMBER_BLOCK)
+        len = _magicBlock._blocks_size * MAX_NUMBER_BLOCK;
+
+    file.size = len - sizeof(fileData_t);
     vd.__write(file.block[0], &file, sizeof(fileData_t));
 
     len -= sizeof(fileData_t);
@@ -101,7 +124,7 @@ vd_size_t FileSystem::write(vd_size_t fd, void *ptr, vd_size_t len)
         }
     }
 
-    return len;
+    return file.size;
 }
 
 vd_size_t FileSystem::read(vd_size_t fd, char *ptr, vd_size_t len)
@@ -111,8 +134,10 @@ vd_size_t FileSystem::read(vd_size_t fd, char *ptr, vd_size_t len)
 
     if (file.block[0] == VD_NAN) return 0;
 
-    if (len + sizeof(fileData_t) > _magicBlock._blocks_size * MAX_NUMBER_BLOCK - sizeof(fileData_t))
+    if (len + sizeof(fileData_t) > _magicBlock._blocks_size * MAX_NUMBER_BLOCK  - sizeof(fileData_t))
         len = _magicBlock._blocks_size * MAX_NUMBER_BLOCK - sizeof(fileData_t);
+    
+    vd_size_t lenRead = len;
 
     tmpLen = (len > _magicBlock._blocks_size - sizeof(fileData_t)) ? _magicBlock._blocks_size - sizeof(fileData_t) : len;
     vd.__read(file.block[0], ptr, tmpLen, sizeof(fileData_t));
@@ -126,7 +151,7 @@ vd_size_t FileSystem::read(vd_size_t fd, char *ptr, vd_size_t len)
         vd.__read(file.block[i], ptr, tmpLen);
     }
 
-    return len;
+    return lenRead;
 }
 
 fileData_t FileSystem::stat(std::string path)
