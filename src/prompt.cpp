@@ -5,25 +5,23 @@
 #include <iostream>
 #include <algorithm>
 
-PromptCommand::PromptCommand(PromptCommandEnum type, std::vector<std::string> args) : type(type), args(args)
+PromptCommand::PromptCommand(std::vector<std::string> args) : args(args)
 {
+    m_name = args.at(0);
+    args.erase(args.begin());
 }
 
-PromptCommandEnum PromptCommand::getType()
+const std::string &PromptCommand::getName() const
 {
-	return type;
+    return m_name;
 }
 
-const std::vector<std::string>& PromptCommand::getArgs()
+const std::vector<std::string>& PromptCommand::getArgs() const
 {
-	return args;
+    return args;
 }
 
 Prompt::Prompt(std::ostream& os, FileSystem& fs) :  fs(fs), os(os), currentDirectory("/")
-{
-}
-
-Prompt::~Prompt()
 {
 }
 
@@ -31,136 +29,128 @@ std::string Prompt::GetPromptString() {
     return "\x1b[31m" + currentDirectory + "\033[0m > ";
 }
 
-PromptCommandResultEnum Prompt::process(PromptCommand& command)
+PromptCommandResultEnum Prompt::process(const std::string &line)
 {
-    fileData_t stat;
-    std::string arg;
-    vd_size_t fd;
-    char buffer[BUFFER_SIZE];
+    PromptCommand cmd = parse(line);
 
-	switch (command.getType()) {
-	case CD:
-        arg = command.getArgs().at(0);
-        
-        try {
-            stat = fs.stat(arg); 
-        } catch (std::runtime_error) {
-            return PromptCommandResultEnum::FAILURE;
-        }
+    try {
+        for (auto &[_key, _fn] : m_prompMap)
+            if (_key == cmd.getName())
+                return (this->*_fn)(cmd);
+    } catch (std::exception &_e) {
+        return PromptCommandResultEnum::FAILURE;
+    }
+    return PromptCommandResultEnum::ERROR;
+}
 
-        if (stat.isDirectory) {
-            currentDirectory = arg;
-            return PromptCommandResultEnum::SUCCESS;
-        } else {
-            return PromptCommandResultEnum::FAILURE;
-        }
-		break;
-	case LS:
-		for (auto &it : fs.list(currentDirectory)) {
-			os << it.name << '\t';
-		}
-		break;
-	case TREE:
-		// TODO(ehdgks0627): Build TREE, and print
-		break;
-	case CAT:
-        arg = command.getArgs().at(0);
-        fd = fs.open(arg);
-        // while (!fs.eof(fd)) { TODO(ehdgks0627)
-        //     vd_size_t readSize = fs.read(fd, buffer, BUFFER_SIZE);
-        //     os.write(buffer, readSize);
-        // }
-        fs.close(fd);
-        return PromptCommandResultEnum::SUCCESS;
-		break;
-	case TOUCH:
-		arg = command.getArgs().at(0);
-        if (fs.create(currentDirectory, arg)) {
-            return PromptCommandResultEnum::SUCCESS;
-        } else {
-            return PromptCommandResultEnum::FAILURE;
-        }
-		break;
-	case RMDIR:
-		arg = command.getArgs().at(0);
-		if (fs.removeDirecotry(arg)) {
-            return PromptCommandResultEnum::SUCCESS;
-        } else {
-            return PromptCommandResultEnum::FAILURE;
-        }
-		break;
-	case RM:
-		arg = command.getArgs().at(0);
-		if (fs.remove(arg)) {
-            return PromptCommandResultEnum::SUCCESS;
-        } else {
-            return PromptCommandResultEnum::FAILURE;
-        }
-		break;
-	case MKDIR:
-        arg = command.getArgs().at(0);
-        if (fs.create(currentDirectory, arg)) {
-            return PromptCommandResultEnum::SUCCESS;
-        } else {
-            return PromptCommandResultEnum::FAILURE;
-        }
-		break;
-	case ECHO:
-		// TODO(ehdgks0627): Implement ECHO
-		break;
-    case NONE:
-        break;
-	}
+void Prompt::generateMap()
+{
+    static bool isGenerated = false;
+
+    if (isGenerated)
+        return;
+    isGenerated = true;
+    m_prompMap["cd"] = &Prompt::fnCd;
+    m_prompMap["ls"] = &Prompt::fnLs;
+    m_prompMap["tree"] = &Prompt::fnTree;
+    m_prompMap["cat"] = &Prompt::fnCat;
+    m_prompMap["touch"] = &Prompt::fnTouch;
+    m_prompMap["rmdir"] = &Prompt::fnRmdir;
+    m_prompMap["rm"] = &Prompt::fnRm;
+    m_prompMap["mkdir"] = &Prompt::fnMkdir;
+    m_prompMap["echo"] = &Prompt::fnEcho;
+}
+
+#pragma region Command function
+
+PromptCommandResultEnum Prompt::fnCd(PromptCommand &command)
+{
+    fileData_t stat{};
+
+    if (!command.getArgs().size() != 1)
+        return PromptCommandResultEnum::ERROR;
+    stat = fs.stat(command.getArgs().at(0));
+    if (stat.isDirectory)
+        currentDirectory = stat.name;
+    return static_cast<PromptCommandResultEnum>(stat.isDirectory);
+}
+
+PromptCommandResultEnum Prompt::fnLs(PromptCommand &command)
+{
+    for (auto &it : fs.list(currentDirectory))
+        os << it.name << '\t';
+    return PromptCommandResultEnum::SUCCESS;
+}
+
+PromptCommandResultEnum Prompt::fnTree(PromptCommand &command)
+{
     return PromptCommandResultEnum::FAILURE;
 }
 
-PromptCommand PomprtCommandPraser::parse(std::string line)
+PromptCommandResultEnum Prompt::fnCat(PromptCommand &command)
 {
-	std::istringstream ss(line);
-	std::string token;
-	std::vector<std::string> args;
-	PromptCommandEnum type = NONE;
-	while (std::getline(ss, token, ' ')) {
-		args.push_back(token);
-	}
-	if (args.size() == 0) {
-		throw; // TODO(ehdgks0627): Handle error
-	}
+    vd_size_t fd = 0;
 
-	// Make command lower
-	std::string command = args.at(0);
-	std::transform(command.begin(), command.end(), command.begin(),
-		[](unsigned char c) { return std::tolower(c); });
+    if (!command.getArgs().size() != 1)
+        return PromptCommandResultEnum::ERROR;
+    fd = fs.open(command.getArgs().at(0));
+    // while (!fs.eof(fd)) { TODO(ehdgks0627)
+    //     vd_size_t readSize = fs.read(fd, buffer, BUFFER_SIZE);
+    //     os.write(buffer, readSize);
+    // }
+    fs.close(fd);
+    return PromptCommandResultEnum::SUCCESS;
+}
 
+PromptCommandResultEnum Prompt::fnTouch(PromptCommand &command)
+{
+    if (!command.getArgs().size() != 1)
+        return PromptCommandResultEnum::ERROR;
+    return static_cast<PromptCommandResultEnum>(fs.create(currentDirectory, command.getArgs().at(0)));
+}
 
-	if (command == "cd") {
-		type = CD;
-	}
-	else if (command == "ls") {
-		type = LS;
-	} 
-	else if (command == "tree") {
-		type = TREE;
-	}
-	else if (command == "cat") {
-		type = CAT;
-	}
-	else if (command == "touch") {
-		type = TOUCH;
-	}
-	else if (command == "rmdir") {
-		type = RMDIR;
-	}
-	else if (command == "rm") {
-		type = RM;
-	}
-	else if (command == "mkdir") {
-		type = MKDIR;
-	}
-	else if (command == "echo") {
-		type = ECHO;
-	}
-	args.erase(args.begin());
+PromptCommandResultEnum Prompt::fnRmdir(PromptCommand &command)
+{
+    if (!command.getArgs().size() != 1)
+        return PromptCommandResultEnum::ERROR;
+    return static_cast<PromptCommandResultEnum>(fs.removeDirecotry(command.getArgs().at(0)));
+}
 
-	return PromptCommand(type, args);
+PromptCommandResultEnum Prompt::fnRm(PromptCommand &command)
+{
+    if (!command.getArgs().size() != 1)
+        return PromptCommandResultEnum::ERROR;
+    return static_cast<PromptCommandResultEnum>(fs.remove(command.getArgs().at(0)));
+}
+
+PromptCommandResultEnum Prompt::fnMkdir(PromptCommand &command)
+{
+    if (!command.getArgs().size() != 1)
+        return PromptCommandResultEnum::ERROR;
+    return static_cast<PromptCommandResultEnum>(fs.create(currentDirectory, command.getArgs().at(0)));
+}
+
+PromptCommandResultEnum Prompt::fnEcho(PromptCommand &command)
+{
+    return PromptCommandResultEnum::FAILURE;
+}
+
+#pragma endregion
+
+PromptCommand Prompt::parse(const std::string &line)
+{
+    std::istringstream ss(line);
+    std::string token;
+    std::vector<std::string> args;
+
+    while (std::getline(ss, token, ' ')) {
+        args.push_back(token);
+    }
+    if (args.size() == 0) {
+        throw; // TODO(ehdgks0627): Handle error
+    }
+    std::transform(args.at(0).begin(), args.at(0).end(), args.at(0).begin(), [] (const char c) {
+        return std::tolower(c);
+    });
+    return PromptCommand(args);
 }

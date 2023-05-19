@@ -1,61 +1,64 @@
 #pragma once
-#include "fs.hpp"
+
 #include <iostream>
+#include <map>
 #include <string>
+#include <functional>
 #include <vector>
 
-#define BUFFER_SIZE 8 * 1024
+#include "fs.hpp"
 
-enum PromptCommandEnum
-{
-    CD,
-    LS,
-    TREE,
-    CAT,
-    TOUCH,
-    RMDIR,
-    RM,
-    MKDIR,
-    ECHO,
-    NONE
-};
+#define BUFFER_SIZE 8 * 1024
 
 class PromptCommand
 {
 public:
-    PromptCommand(PromptCommandEnum type, std::vector<std::string> args);
+    PromptCommand(std::vector<std::string> args);
 
-    PromptCommandEnum getType();
-    const std::vector<std::string>& getArgs();
+    [[nodiscard]] const std::string &getName() const;
+    [[nodiscard]] const std::vector<std::string> &getArgs() const;
 
 private:
-    PromptCommandEnum type;
-    std::vector<std::string> args;
+    std::string m_name{};
+    std::vector<std::string> args{};
 };
 
 enum PromptCommandResultEnum
 {
-    ERROR,
     FAILURE,
     SUCCESS,
-};
-
-class PomprtCommandPraser
-{
-public:
-    static PromptCommand parse(std::string line);
+    ERROR
 };
 
 class Prompt
 {
 public:
     Prompt(std::ostream& os, FileSystem& fs);
-    ~Prompt();
-    std::string GetPromptString();
+    ~Prompt() = default;
 
-    PromptCommandResultEnum process(PromptCommand& command);
+    [[nodiscard]] std::string GetPromptString();
+
+    PromptCommandResultEnum process(const std::string &line);
+
+protected:
+    static inline std::map<std::string, PromptCommandResultEnum (Prompt::*)(PromptCommand &)> m_prompMap;
+
+    static void generateMap();
+
+    PromptCommandResultEnum fnCd(PromptCommand &command);
+    PromptCommandResultEnum fnLs(PromptCommand &command);
+    PromptCommandResultEnum fnTree(PromptCommand &command);
+    PromptCommandResultEnum fnCat(PromptCommand &command);
+    PromptCommandResultEnum fnTouch(PromptCommand &command);
+    PromptCommandResultEnum fnRmdir(PromptCommand &command);
+    PromptCommandResultEnum fnRm(PromptCommand &command);
+    PromptCommandResultEnum fnMkdir(PromptCommand &command);
+    PromptCommandResultEnum fnEcho(PromptCommand &command);
+
 private:
-    FileSystem& fs;
-    std::ostream& os;
-    std::string currentDirectory;
+    [[nodiscard]] static PromptCommand parse(const std::string &line);
+
+    FileSystem &fs;
+    std::ostream &os;
+    std::string currentDirectory{};
 };
