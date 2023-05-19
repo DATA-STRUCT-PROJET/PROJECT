@@ -47,7 +47,7 @@ class FileSystem
             return vd.__save(path.c_str());
         }
 
-    //private:
+    private:
         void __registerMagicBlock();
         void __getMagicBlock();
         vd_size_t __getBlock();
