@@ -5,20 +5,20 @@
 #include <iostream>
 #include <algorithm>
 
-PromptCommand::PromptCommand(std::vector<std::string> args) : args(args)
+PromptCommand::PromptCommand(std::vector<std::string> args) : _args(args)
 {
-    m_name = args.at(0);
-    args.erase(args.begin());
+    _name = _args.at(0);
+    _args.erase(_args.begin());
 }
 
 const std::string &PromptCommand::getName() const
 {
-    return m_name;
+    return _name;
 }
 
 const std::vector<std::string>& PromptCommand::getArgs() const
 {
-    return args;
+    return _args;
 }
 
 Prompt::Prompt(std::ostream& os, FileSystem& fs) :  fs(fs), os(os), currentDirectory("/")

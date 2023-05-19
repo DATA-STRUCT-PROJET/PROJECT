@@ -19,8 +19,8 @@ public:
     [[nodiscard]] const std::vector<std::string> &getArgs() const;
 
 private:
-    std::string m_name{};
-    std::vector<std::string> args{};
+    std::string _name;
+    std::vector<std::string> _args;
 };
 
 enum PromptCommandResultEnum
