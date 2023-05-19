@@ -23,6 +23,7 @@ const std::vector<std::string>& PromptCommand::getArgs() const
 
 Prompt::Prompt(std::ostream& os, FileSystem& fs) :  fs(fs), os(os), currentDirectory("/")
 {
+	generateMap();
 }
 
 std::string Prompt::GetPromptString() {
