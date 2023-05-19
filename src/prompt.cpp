@@ -68,7 +68,7 @@ PromptCommandResultEnum Prompt::fnCd(PromptCommand &command)
 {
     fileData_t stat{};
 
-    if (!command.getArgs().size() != 1)
+    if (command.getArgs().size() != 1)
         return PromptCommandResultEnum::ERROR;
     stat = fs.stat(command.getArgs().at(0));
     if (stat.isDirectory)
@@ -90,16 +90,23 @@ PromptCommandResultEnum Prompt::fnTree(PromptCommand &command)
 
 PromptCommandResultEnum Prompt::fnCat(PromptCommand &command)
 {
-    vd_size_t fd = 0;
+    if (command.getArgs().empty() || command.getArgs().size() > 1) return PromptCommandResultEnum::FAILURE; // print usage first??
+	if (command.getArgs().front() == "-h" || command.getArgs().front() == "--help")
+		return PromptCommandResultEnum::SUCCESS; // print the usage
 
-    if (command.getArgs().size() != 1)
-        return PromptCommandResultEnum::ERROR;
-    fd = fs.open(command.getArgs().at(0));
-    // while (!fs.eof(fd)) { TODO(ehdgks0627)
-    //     vd_size_t readSize = fs.read(fd, buffer, BUFFER_SIZE);
-    //     os.write(buffer, readSize);
-    // }
-    fs.close(fd);
+	std::string filename = command.getArgs().at(0);
+    auto fd = fs.open(filename);
+	auto stat = fs.stat(filename);
+	char *ptr = new char[stat.size + 1]; // adding +1 for the \0
+
+	auto readLen = fs.read(fd, ptr, stat.size);
+	ptr[stat.size] = 0; // read dont end with terminated value
+
+	fs.close(fd);
+	if (readLen == 0) return PromptCommandResultEnum::FAILURE;
+
+	os << ptr << std::endl;
+
     return PromptCommandResultEnum::SUCCESS;
 }
 
@@ -133,7 +140,22 @@ PromptCommandResultEnum Prompt::fnMkdir(PromptCommand &command)
 
 PromptCommandResultEnum Prompt::fnEcho(PromptCommand &command)
 {
-    return PromptCommandResultEnum::FAILURE;
+	if (command.getArgs().empty() || command.getArgs().size() > 2) return PromptCommandResultEnum::FAILURE; // print usage first??
+	if (command.getArgs().front() == "-h" || command.getArgs().front() == "--help")
+		return PromptCommandResultEnum::SUCCESS; // print the usage
+
+
+	std::string buff = command.getArgs().at(0);
+	std::string file = command.getArgs().at(1);
+	auto fd = fs.open(file);
+
+	if (fd == -1) return PromptCommandResultEnum::FAILURE;
+
+	auto lenWritten = fs.write(fd, buff.data(), buff.size());
+
+	fs.close(fd);
+
+    return (lenWritten > 0) ? PromptCommandResultEnum::SUCCESS :  PromptCommandResultEnum::FAILURE;
 }
 
 #pragma endregion
