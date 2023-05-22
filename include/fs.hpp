@@ -1,7 +1,10 @@
 #pragma once
-#include <unistd.h>
-#include "vd.hpp"
+
 #include <map>
+
+#include <unistd.h>
+
+#include "vd.hpp"
 
 #define VD_NAN std::string::npos
 #define MAX_NUMBER_BLOCK 5
@@ -36,7 +39,7 @@ class FileSystem
         void close(std::string path);
         void close(vd_size_t fd);
 
-        vd_size_t write(vd_size_t fd, void *ptr, vd_size_t len);
+        vd_size_t write(vd_size_t fd, const void *ptr, vd_size_t len);
         vd_size_t read(vd_size_t fd, char *ptr, vd_size_t len);
 
         fileData_t stat(std::string path);

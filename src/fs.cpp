@@ -1,5 +1,7 @@
-#include "fs.hpp"
+#include <cstring>
 #include <iostream>
+
+#include "fs.hpp"
 
 FileSystem::FileSystem(vd_size_t nb_block, vd_size_t block_len)
     : vd(virtualDisk(nb_block, block_len))
@@ -86,7 +88,7 @@ void FileSystem::debug()
         __printFileStat(it);
 }
 
-vd_size_t FileSystem::write(vd_size_t fd, void *ptr, vd_size_t len)
+vd_size_t FileSystem::write(vd_size_t fd, const void *ptr, vd_size_t len)
 {
     fileData_t& file = __getFileFromFD(fd);
     vd_size_t tmpLen = 0;
