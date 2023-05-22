@@ -1,7 +1,9 @@
 #pragma once
+
 #include <iostream>
-#include <stdlib.h>
 #include <vector>
+
+#include <stdlib.h>
 
 typedef size_t vd_size_t;
 
@@ -19,8 +21,8 @@ class virtualDisk
         }
 
         //method
-        void *__read(vd_size_t block, void* ptr, vd_size_t size, vd_size_t offset = 0);
-        size_t __write(vd_size_t block, void* ptr, vd_size_t len, vd_size_t offset = 0);
+        void *__read(vd_size_t block, void *ptr, vd_size_t size, vd_size_t offset = 0);
+        size_t __write(vd_size_t block, const void *ptr, vd_size_t len, vd_size_t offset = 0);
 
         bool __save(const char *path);
 

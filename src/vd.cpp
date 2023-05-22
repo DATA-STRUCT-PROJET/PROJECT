@@ -1,8 +1,11 @@
-#include "vd.hpp"
-#include <stdlib.h>
+#include <cstring>
 #include <fstream>
 #include <iostream>
+
+#include <stdlib.h>
 #include <unistd.h>
+
+#include "vd.hpp"
 
 virtualDisk::virtualDisk(vd_size_t nb_block, vd_size_t block_len)
 : _nb_block(nb_block), _blocks_len(block_len * DEFAULT_BLOCK_SIZE)
@@ -18,8 +21,8 @@ virtualDisk::virtualDisk(const char *path)
 {
     std::ifstream file(path, std::ios::binary | std::ios::in | std::ios::ate);
 
-    if (!file.is_open()) throw std::runtime_error("error open the save failed");
-
+    if (!file.is_open())
+        throw std::runtime_error("error open the save failed");
     try {
         std::streampos size = file.tellg();
         std::cout << "ok" << size << std::endl;
@@ -36,34 +39,32 @@ virtualDisk::virtualDisk(const char *path)
     }
 }
 
-void *virtualDisk::__read(vd_size_t block, void* ptr, vd_size_t size, vd_size_t offset)
+void *virtualDisk::__read(vd_size_t block, void *ptr, vd_size_t size, vd_size_t offset)
 {
     vd_size_t pos = block * _blocks_len + offset;
-    
+
     return (void*)memcpy(ptr, ((char*)_magical) + pos, size);
 }
 
-size_t virtualDisk::__write(vd_size_t block, void* ptr, vd_size_t len, vd_size_t offset)
+size_t virtualDisk::__write(vd_size_t block, const void *ptr, vd_size_t len, vd_size_t offset)
 {
     vd_size_t pos = block * _blocks_len + offset;
-    
+
     memcpy(((char*)_magical) + pos, ptr, len);
-    
     return len;
 }
 
 bool virtualDisk::__save(const char *path)
 {
     std::ofstream file(path, std::ios::out | std::ios::binary);
-    
-    if (!file.is_open()) return false;
 
+    if (!file.is_open())
+        return false;
     try {
         file.write(_magical, _nb_block * _blocks_len);
         file.close();
     } catch(...) {
         return false;
     }
-    
     return true;
 }
