@@ -12,15 +12,15 @@
 
 class PromptCommand
 {
-public:
-    PromptCommand(std::vector<std::string> args);
+    public:
+        PromptCommand(std::vector<std::string> args);
 
-    [[nodiscard]] const std::string &getName() const;
-    [[nodiscard]] const std::vector<std::string> &getArgs() const;
+        [[nodiscard]] const std::string &getName() const;
+        [[nodiscard]] const std::vector<std::string> &getArgs() const;
 
-private:
-    std::string _name;
-    std::vector<std::string> _args;
+    private:
+        std::string m_name;
+        std::vector<std::string> m_args;
 };
 
 enum PromptCommandResultEnum
@@ -32,33 +32,36 @@ enum PromptCommandResultEnum
 
 class Prompt
 {
-public:
-    Prompt(std::ostream& os, FileSystem& fs);
-    ~Prompt() = default;
+    public:
+        Prompt(std::ostream &_os, FileSystem &_fs);
+        ~Prompt() = default;
 
-    [[nodiscard]] std::string GetPromptString();
+        [[nodiscard]] std::string GetPromptString() const;
 
-    PromptCommandResultEnum process(const std::string &line);
+        PromptCommandResultEnum process(const std::string &_line);
 
-protected:
-    static inline std::map<std::string, PromptCommandResultEnum (Prompt::*)(PromptCommand &)> m_prompMap;
+    protected:
+        static inline std::map<std::string, PromptCommandResultEnum (Prompt::*)(const PromptCommand &)> m_prompMap;
 
-    static void generateMap();
+        static void generateMap();
 
-    PromptCommandResultEnum fnCd(PromptCommand &command);
-    PromptCommandResultEnum fnLs(PromptCommand &command);
-    PromptCommandResultEnum fnTree(PromptCommand &command);
-    PromptCommandResultEnum fnCat(PromptCommand &command);
-    PromptCommandResultEnum fnTouch(PromptCommand &command);
-    PromptCommandResultEnum fnRmdir(PromptCommand &command);
-    PromptCommandResultEnum fnRm(PromptCommand &command);
-    PromptCommandResultEnum fnMkdir(PromptCommand &command);
-    PromptCommandResultEnum fnEcho(PromptCommand &command);
+        PromptCommandResultEnum fnCd(const PromptCommand &_cmd);
+        PromptCommandResultEnum fnLs(const PromptCommand &_cmd);
+        PromptCommandResultEnum fnTree(const PromptCommand &_cmd);
+        PromptCommandResultEnum fnCat(const PromptCommand &_cmd);
+        PromptCommandResultEnum fnTouch(const PromptCommand &_cmd);
+        PromptCommandResultEnum fnRmdir(const PromptCommand &_cmd);
+        PromptCommandResultEnum fnRm(const PromptCommand &_cmd);
+        PromptCommandResultEnum fnMkdir(const PromptCommand &_cmd);
+        PromptCommandResultEnum fnEcho(const PromptCommand &_cmd);
 
+    private:
 private:
     [[nodiscard]] static PromptCommand parse(const std::string &line);
 
-    FileSystem &fs;
-    std::ostream &os;
-    std::string currentDirectory{};
+        [[nodiscard]] static PromptCommand parse(const std::string &line);
+
+        FileSystem &m_fs;
+        std::ostream &m_os;
+        std::string m_cdir{};
 };
