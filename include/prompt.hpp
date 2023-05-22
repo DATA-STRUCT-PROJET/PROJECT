@@ -6,6 +6,10 @@
 #include <functional>
 #include <vector>
 
+#if defined(TEST_ENABLED)
+#include "gtest/gtest.h"
+#endif
+
 #include "fs.hpp"
 
 #define BUFFER_SIZE 8 * 1024
@@ -56,8 +60,13 @@ class Prompt
         PromptCommandResultEnum fnEcho(const PromptCommand &_cmd);
 
     private:
-private:
-    [[nodiscard]] static PromptCommand parse(const std::string &line);
+#if defined(TEST_ENABLED)
+        FRIEND_TEST(PromptCD, basic);
+        FRIEND_TEST(PromptCD, same_directory);
+        FRIEND_TEST(PromptCD, up_directory);
+        FRIEND_TEST(PromptCD, unknow_target);
+        FRIEND_TEST(PromptCD, file_target);
+#endif
 
         [[nodiscard]] static PromptCommand parse(const std::string &line);
 

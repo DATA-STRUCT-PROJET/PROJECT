@@ -54,15 +54,15 @@ void Prompt::generateMap()
     if (isGenerated)
         return;
     isGenerated = true;
-    m_prompMap["cd"] = &Prompt::fnCd;
-    m_prompMap["ls"] = &Prompt::fnLs;
+    m_prompMap["cd"] = &Prompt::fnCd; // done
+    m_prompMap["ls"] = &Prompt::fnLs; // done
     m_prompMap["tree"] = &Prompt::fnTree;
-    m_prompMap["cat"] = &Prompt::fnCat;
-    m_prompMap["touch"] = &Prompt::fnTouch;
+    m_prompMap["cat"] = &Prompt::fnCat; // done
+    m_prompMap["touch"] = &Prompt::fnTouch; // need test
     m_prompMap["rmdir"] = &Prompt::fnRmdir;
     m_prompMap["rm"] = &Prompt::fnRm;
     m_prompMap["mkdir"] = &Prompt::fnMkdir;
-    m_prompMap["echo"] = &Prompt::fnEcho;
+    m_prompMap["echo"] = &Prompt::fnEcho; // done
 }
 
 #pragma region Command function
