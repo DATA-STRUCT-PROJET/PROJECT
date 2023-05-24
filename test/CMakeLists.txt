@@ -25,9 +25,13 @@ add_executable(Test
     src/Prompt/cd.cpp
     src/Prompt/echo.cpp
     src/Prompt/ls.cpp
+    src/VirtualDisk/Initialisation.cpp
+    src/VirtualDisk/Read.cpp
+    src/VirtualDisk/Write.cpp
     src/main.cpp
 )
 
+target_include_directories(Test PRIVATE ../../include)
 target_compile_definitions(Test PRIVATE TEST_ENABLED)
 
 target_link_libraries(Test PRIVATE gtest)

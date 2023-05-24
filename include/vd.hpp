@@ -5,7 +5,11 @@
 
 #include <stdlib.h>
 
-typedef size_t vd_size_t;
+#if defined(TEST_ENABLED)
+#include "gtest/gtest.h"
+#endif
+
+using vd_size_t = size_t;
 
 #define DEFAULT_BLOCK_SIZE 4096
 
@@ -27,6 +31,16 @@ class virtualDisk
         bool __save(const char *path);
 
     private:
+
+#if defined(TEST_ENABLED)
+        FRIEND_TEST(VirtualDisk_build, create_new);
+        FRIEND_TEST(VirtualDisk_build, loading_vd);
+        FRIEND_TEST(VirtualDisk_build, loading_unknow_file);
+
+        friend class VirtualDisk_write;
+        FRIEND_TEST(VirtualDisk_write, write_generic);
+#endif
+
         char *_magical = nullptr;
         vd_size_t _nb_block;
         vd_size_t _blocks_len;
