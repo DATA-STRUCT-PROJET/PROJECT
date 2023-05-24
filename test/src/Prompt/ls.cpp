@@ -17,7 +17,7 @@ class PromptLS : public ::testing::Test
         FileSystem m_fs;
         Prompt m_prompt;
 
-        static constexpr char *Path = (char *)"./VS/Promp";
+        static constexpr char *Path = (char *)"./VD/Promp";
 
         static inline const std::vector<std::string> DirAct = { "file1.txt", "file2.txt", "folder1", "folder2" };
         static inline const std::vector<std::string> DirFolder1 = { "file1.txt", "file2.txt" };

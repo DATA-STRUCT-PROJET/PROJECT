@@ -12,7 +12,7 @@ class PromptECHO_basic : public ::testing::TestWithParam<std::tuple<std::string,
 
         FileSystem m_fs;
         Prompt m_prompt;
-        static constexpr char *Path = (char *)"./VS/Promp";
+        static constexpr char *Path = (char *)"./VD/Promp";
 };
 
 TEST_P(PromptECHO_basic, basic_generic)
@@ -48,7 +48,7 @@ class PromptECHO_help : public ::testing::TestWithParam<std::string>
 
         FileSystem m_fs;
         Prompt m_prompt;
-        static constexpr char *Path = (char *)"./VS/Promp";
+        static constexpr char *Path = (char *)"./VD/Promp";
         static constexpr char *Help = (char *)"Usage: echo FILE [DATA]...\nConcatenate DATA(s) to FILE.\n";
 };
 
@@ -75,7 +75,7 @@ class PromptECHO_error : public ::testing::TestWithParam<std::tuple<std::string,
 
         FileSystem m_fs;
         Prompt m_prompt;
-        static constexpr char *Path = (char *)"./VS/Promp";
+        static constexpr char *Path = (char *)"./VD/Promp";
 };
 
 TEST_P(PromptECHO_error, error_generic)

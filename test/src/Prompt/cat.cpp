@@ -12,7 +12,7 @@ class PromptCAT_basic : public ::testing::TestWithParam<std::tuple<std::string, 
 
         FileSystem m_fs;
         Prompt m_prompt;
-        static constexpr char *Path = (char *)"./VS/Promp";
+        static constexpr char *Path = (char *)"./VD/Promp";
 };
 
 TEST_P(PromptCAT_basic, basic_generic)
@@ -49,7 +49,7 @@ class PromptCAT_multi : public ::testing::Test
 
         FileSystem m_fs;
         Prompt m_prompt;
-        static constexpr char *Path = (char *)"./VS/Promp";
+        static constexpr char *Path = (char *)"./VD/Promp";
 };
 
 TEST_F(PromptCAT_multi, multiple)

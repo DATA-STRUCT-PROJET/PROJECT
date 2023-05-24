@@ -13,7 +13,7 @@ class PromptCD : public ::testing::Test
         FileSystem m_fs;
         Prompt m_prompt;
 
-        static constexpr char *Path = (char *)"./VS/Promp";
+        static constexpr char *Path = (char *)"./VD/Promp";
 };
 
 TEST_F(PromptCD, basic)
