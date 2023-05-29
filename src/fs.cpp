@@ -95,16 +95,55 @@ bool FileSystem::create(std::string filename)
 #pragma region remove
 
 bool FileSystem::remove(std::string filename) {
+    
+    if (_magicBlock._nb_blocks -1 == _magicBlock._nb_used_blocks)
+        return false;
+
+    if (filename.back() == '/') throw std::invalid_argument("Filename can't end with a '/'");
+
+    std::string path = getPath(filename);
+    std::string name = getLast(filename);
+    path = (path == name) ? "." : path;
+
+    dirData_t parentFolder = getFolder(path);
+    
+    for (auto it = parentFolder.files.begin(); it != parentFolder.files.end(); it++) {
+        auto file_tmp = __getFile(*it);
+        if (file_tmp.name == name) {
+            parentFolder.files.erase(it);
+            __saveFolder(parentFolder);
+            __remove(file_tmp.block[0]); // only modify the first 5 bytes (conf data)
+            return true;
+        }
+    }
     return false;
 }
 
 bool FileSystem::removeDirectory(std::string filename) {
-    return removeDirectory();
-}
+    if (_magicBlock._nb_blocks -1 == _magicBlock._nb_used_blocks)
+        return false;
 
-bool FileSystem::removeDirectory(fileData_t current) {
+    if (filename.back() == '/') filename.erase(filename.end() -1);
+
+    std::string path = getPath(filename);
+    std::string name = getLast(filename);
+    path = (path == name) ? "." : path;
+
+    dirData_t parentFolder = getFolder(path);
+
+    for (auto it = parentFolder.files.begin(); it != parentFolder.files.end(); it++) {
+        auto folder_tmp = __getFolder(*it);
+        if (folder_tmp.name == name) {
+            if (!folder_tmp.files.empty()) throw std::invalid_argument("Folder is not empty");
+            parentFolder.files.erase(it);
+            __saveFolder(parentFolder);
+            __remove(folder_tmp.block); // only modify the first 5 bytes (conf data)
+            return true;
+        }
+    }
     return false;
 }
+
 
 #pragma endregion 
 
@@ -345,11 +384,25 @@ void FileSystem::__getMagicBlock()
 
 #pragma endregion
 
-#pragma region get_save_folder_file
+#pragma region get_save_remove_folder_file
+
+void FileSystem::__remove(vd_size_t block)
+{
+    _magicBlock._nb_used_blocks--;
+    _magicBlock._free_blocks.push_back(block);
+
+    char ptr[5] = {0, 0, 0, 0, 0};
+    vd.__write(block, ptr, 5);
+}
+
+void FileSystem::__remove(std::vector<vd_size_t> blocks)
+{
+    for (auto it: blocks)
+        __remove(it);
+}
 
 void FileSystem::__saveFolder(dirData_t folder)
 {
-
     int sizef = sizeof(dirData_t) - sizeof(std::vector<vd_size_t>);
     vd_size_t offset = std::abs(sizef);
     vd.__write(folder.block, &folder, offset);

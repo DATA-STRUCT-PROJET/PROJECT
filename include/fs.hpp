@@ -75,10 +75,7 @@ class FileSystem
         // for promp commands (to review and remake later)
 
         bool remove(std::string filename);
-
         bool removeDirectory(std::string filename);
-
-        bool removeDirectory(fileData_t current = fileData_t());
 
         std::vector<fileStat_t> list(std::string path) {
 
@@ -108,6 +105,8 @@ class FileSystem
 
         fileData_t __getFile(vd_size_t block);
         void __saveFile(fileData_t File);
+        void __remove(vd_size_t block);
+        void __remove(std::vector<vd_size_t> block);
 
         vd_size_t __getBlock();
         vd_size_t __newFd();
