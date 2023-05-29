@@ -11,7 +11,7 @@
 
 using vd_size_t = size_t;
 
-#define DEFAULT_BLOCK_SIZE 4096
+#define DEFAULT_BLOCK_LEN 4096
 
 class virtualDisk
 {

@@ -9,7 +9,7 @@ class VirtualDisk_build : public ::testing::Test
 
         static constexpr vd_size_t NbBlock = 2;
         static constexpr vd_size_t LenBlock = 42;
-        static constexpr vd_size_t LenBlockProc = LenBlock * DEFAULT_BLOCK_SIZE;
+        static constexpr vd_size_t LenBlockProc = LenBlock * DEFAULT_BLOCK_LEN;
         static constexpr vd_size_t SizeBlock = NbBlock * LenBlockProc;
 };
 

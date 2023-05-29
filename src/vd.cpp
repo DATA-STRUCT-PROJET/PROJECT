@@ -1,14 +1,10 @@
-#include <cstring>
 #include <fstream>
 #include <iostream>
-
-#include <stdlib.h>
-#include <unistd.h>
 
 #include "vd.hpp"
 
 virtualDisk::virtualDisk(vd_size_t nb_block, vd_size_t block_len)
-: _nb_block(nb_block), _blocks_len(block_len * DEFAULT_BLOCK_SIZE)
+: _nb_block(nb_block), _blocks_len(block_len * DEFAULT_BLOCK_LEN)
 {
     _magical = new char[nb_block * _blocks_len];
     std::cout << nb_block * _blocks_len << std::endl;
