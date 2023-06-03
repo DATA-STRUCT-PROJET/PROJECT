@@ -69,7 +69,7 @@ bool FileSystem::create(std::string filename)
 {
     if (_magicBlock._nb_blocks -1 == _magicBlock._nb_used_blocks)
         return false;
-
+    
     if (filename.back() == '/') throw std::invalid_argument("Filename can't end with a '/'");
 
     std::string path = getPath(filename);
@@ -94,11 +94,8 @@ bool FileSystem::create(std::string filename)
 
 #pragma region remove
 
-bool FileSystem::remove(std::string filename) {
-    
-    if (_magicBlock._nb_blocks -1 == _magicBlock._nb_used_blocks)
-        return false;
-
+bool FileSystem::remove(std::string filename)
+{
     if (filename.back() == '/') throw std::invalid_argument("Filename can't end with a '/'");
 
     std::string path = getPath(filename);
@@ -119,10 +116,8 @@ bool FileSystem::remove(std::string filename) {
     return false;
 }
 
-bool FileSystem::removeDirectory(std::string filename) {
-    if (_magicBlock._nb_blocks -1 == _magicBlock._nb_used_blocks)
-        return false;
-
+bool FileSystem::removeDirectory(std::string filename)
+{
     if (filename.back() == '/') filename.erase(filename.end() -1);
 
     std::string path = getPath(filename);
@@ -151,17 +146,18 @@ bool FileSystem::removeDirectory(std::string filename) {
 
 dirData_t FileSystem::getFolder(std::string path, dirData_t parentFolder)
 {
-    if (path == "/") return __getFolder(MAIN_FOLDER_BLOCK);
+    if (path == "/" || path.empty()) return __getFolder(MAIN_FOLDER_BLOCK);
 
     if (parentFolder.block == VD_NAN)
         parentFolder = __getFolder(MAIN_FOLDER_BLOCK);
 
     if (path.back() == '/') path.erase(path.end() - 1);
+    if (path.front() == '/') path = "." + path;
 
     std::string current_path = getFirst(path);
     std::string new_path = getRest(path);
-
     dirData_t folder = __getFolder(current_path, parentFolder);
+
     if (!new_path.empty()) {
         return getFolder(new_path, folder);
     }
@@ -242,7 +238,7 @@ fileStat_t FileSystem::stat(std::string filename)
             stat.isFolder = true;
             return stat;
         } catch (std::exception &e) {
-            std::cerr << "error: " << filename << " do not exist" << std::endl;
+            throw std::runtime_error((filename + ": file not found").c_str());
         }
     }
     return fileStat_t(); // can't happen
@@ -304,6 +300,30 @@ vd_size_t FileSystem::read(vd_size_t fd, char *ptr, vd_size_t len)
     }
 
     return len;
+}
+
+#pragma endregion
+
+#pragma region list
+
+std::vector<fileStat_t> FileSystem::list(std::string path)
+{
+    std::cout << "list:" << path << std::endl;
+    dirData_t folder = getFolder(path);
+
+    return list(folder);
+}
+
+std::vector<fileStat_t> FileSystem::list(dirData_t current) {
+    std::vector<fileStat_t> result;
+    if (current.block == VD_NAN) current = __getFolder(MAIN_FOLDER_BLOCK);
+
+    std::cout << "list;" << current.path << std::endl;
+    for (auto it: current.files) {
+        result.push_back(__stat(it));
+    }
+
+    return result;
 }
 
 #pragma endregion

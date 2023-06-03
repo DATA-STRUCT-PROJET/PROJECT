@@ -8,8 +8,8 @@
 PromptCommand::PromptCommand(std::vector<std::string> _args)
     : m_args(_args)
 {
-    m_name = _args.at(0);
-    m_args.erase(_args.begin());
+    m_name = m_args.at(0);
+    m_args.erase(m_args.begin());
 }
 
 const std::string &PromptCommand::getName() const
@@ -104,8 +104,7 @@ PromptCommandResultEnum Prompt::fnLs(const PromptCommand &_cmd)
                 m_os << "ls: cannot access " << _path << ": No such file or directory" << std::endl;
                 ret = PromptCommandResultEnum::FAILURE;
                 continue;
-            }
-            std::cout << "fnLs path:" << _path << std::endl;
+            } try {
             if (narg > 1)
                 m_os << _path << ":" << std::endl;
             dir = m_cdir + _path;
@@ -114,6 +113,12 @@ PromptCommandResultEnum Prompt::fnLs(const PromptCommand &_cmd)
             m_os << std::endl;
             if (narg > 1)
                 m_os << std::endl;
+            } catch (std::exception &_e) {
+                std::ignore = _e;
+
+                m_os << "ls: cannot access " << _path << ": No such file or directory" << std::endl;
+                ret = PromptCommandResultEnum::FAILURE;
+            }
         }
     } else {
         try {
@@ -182,7 +187,7 @@ PromptCommandResultEnum Prompt::fnTouch(const PromptCommand &_cmd)
     if (_cmd.getArgs().empty())
         return PromptCommandResultEnum::FAILURE;
     try {
-        m_fs.create(m_cdir + '/' + _cmd.getArgs().front());
+        m_fs.create(m_cdir + "/" +_cmd.getArgs().front());
         // stat = m_fs.stat(_cmd.getArgs().front());
     } catch (std::exception &_e) {
         // std::ignore = _e;
@@ -195,23 +200,30 @@ PromptCommandResultEnum Prompt::fnTouch(const PromptCommand &_cmd)
 
 PromptCommandResultEnum Prompt::fnRmdir(const PromptCommand &_cmd)
 {
-    // if (_cmd.getArgs().size() != 1)
-    return PromptCommandResultEnum::ERROR;
-    // return static_cast<PromptCommandResultEnum>(m_fs.removeDirecotry(_cmd.getArgs().front()));
+    if (_cmd.getArgs().size() != 1)
+        return PromptCommandResultEnum::ERROR;
+    return static_cast<PromptCommandResultEnum>(m_fs.removeDirectory(_cmd.getArgs().front()));
 }
 
 PromptCommandResultEnum Prompt::fnRm(const PromptCommand &_cmd)
 {
-    // if (_cmd.getArgs().size() != 1)
-    return PromptCommandResultEnum::ERROR;
-    // return static_cast<PromptCommandResultEnum>(m_fs.remove(_cmd.getArgs().front()));
+    if (_cmd.getArgs().size() != 1)
+        return PromptCommandResultEnum::ERROR;
+    return static_cast<PromptCommandResultEnum>(m_fs.remove(_cmd.getArgs().front()));
 }
 
 PromptCommandResultEnum Prompt::fnMkdir(const PromptCommand &_cmd)
 {
-    // if (_cmd.getArgs().size() != 1)
-    return PromptCommandResultEnum::ERROR;
-    // return static_cast<PromptCommandResultEnum>(m_fs.create(m_cdir, _cmd.getArgs().front()));
+    if (_cmd.getArgs().size() != 1)
+        return PromptCommandResultEnum::ERROR;
+    try { 
+        return static_cast<PromptCommandResultEnum>(m_fs.createFolder(m_cdir + _cmd.getArgs().front()));
+    } catch (std::exception &_e) {
+        // std::cerr << _e.what() << std::endl;
+        std::ignore = _e;
+        std::cerr << "command mkdir= " << m_cdir << _cmd.getArgs().front() << std::endl;
+        return PromptCommandResultEnum::ERROR;
+    }
 }
 
 PromptCommandResultEnum Prompt::fnEcho(const PromptCommand &_cmd)

@@ -77,23 +77,8 @@ class FileSystem
         bool remove(std::string filename);
         bool removeDirectory(std::string filename);
 
-        std::vector<fileStat_t> list(std::string path) {
-
-            dirData_t folder = getFolder(path);
-
-            return list(folder);
-        }
-
-        std::vector<fileStat_t> list(dirData_t current = dirData_t()) {
-            std::vector<fileStat_t> result;
-            if (current.block == VD_NAN) current = __getFolder(MAIN_FOLDER_BLOCK);
-
-            for (auto it: current.files) {
-                result.push_back(__stat(it));
-            }
-
-            return result;
-        }
+        std::vector<fileStat_t> list(std::string path);
+        std::vector<fileStat_t> list(dirData_t current = dirData_t());
 
     private:
         void __registerMagicBlock();
