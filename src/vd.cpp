@@ -1,3 +1,4 @@
+#include <cstring>
 #include <fstream>
 #include <iostream>
 
@@ -21,7 +22,6 @@ virtualDisk::virtualDisk(const char *path)
         throw std::runtime_error("error open the save failed");
     try {
         std::streampos size = file.tellg();
-        std::cout << "ok" << size << std::endl;
 
         _magical = new char[size];
         file.seekg(0, std::ios::beg);
@@ -38,15 +38,33 @@ virtualDisk::virtualDisk(const char *path)
 void *virtualDisk::__read(vd_size_t block, void *ptr, vd_size_t size, vd_size_t offset)
 {
     vd_size_t pos = block * _blocks_len + offset;
+    // std::cout << "reading block: " << block << " with offset of: " << offset << " and size: " << size << std::endl;
+    // std::cout << "calculated pos: " << pos << std::endl;
 
+    // std::cout << "Reading:" << std::endl;
+    // for (size_t it = 0; it < size; it++)
+    //     std::cout <<  static_cast<int>(_magical[it + pos]) << " ";
+    // std::cout << std::endl;
+    // for (size_t it = 0; it < size; it++)
+    //     std::cout << _magical[it + pos] << " ";
+    // std::cout << std::endl;
     return (void*)memcpy(ptr, ((char*)_magical) + pos, size);
 }
 
 size_t virtualDisk::__write(vd_size_t block, const void *ptr, vd_size_t len, vd_size_t offset)
 {
     vd_size_t pos = block * _blocks_len + offset;
+    // std::cout << "writting block: " << block << " with offset of: " << offset << " and size: " << len << std::endl;
+    // std::cout << "calculated pos: " << pos << std::endl;
 
     memcpy(((char*)_magical) + pos, ptr, len);
+    // std::cout << "Writting:" << std::endl;
+    // for (size_t it = 0; it < len; it++)
+    //     std::cout << static_cast<int>(_magical[it + pos]) << " ";
+    // std::cout << std::endl;
+    // for (size_t it = 0; it < len; it++)
+    //     std::cout << _magical[it + pos] << " ";
+    // std::cout << std::endl;
     return len;
 }
 

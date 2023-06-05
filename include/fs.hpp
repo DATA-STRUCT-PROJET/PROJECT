@@ -12,25 +12,30 @@
 #define FILE_CONF "CONF\0"
 #define FOLDER_CONF "COND\0"
 
+#define getFirst(path) path.substr(0, path.find_first_of('/'))
+#define getRest(path) ((path.find_first_of('/') == std::string::npos) ? "" : path.substr(path.find_first_of('/') + 1))
+#define getLast(path) path.substr(path.find_last_of('/') + 1)
+#define getPath(path) path.substr(0, path.find_last_of('/'))
+
 struct fileData_t {
     char conf[5] = {'C','O','N','F', 0};
-    std::string path = ".";
-    std::string name = ".";
+    char path[128] = ".";
+    char name[128] = ".";
     vd_size_t block[MAX_NUMBER_BLOCK] = {VD_NAN};
     vd_size_t size = 0;
 };
 
 struct dirData_t {
     char conf[5] = {'C','O','N','D', 0};
-    std::string path = ".";
-    std::string name = ".";
+    char path[128] = "/";
+    char name[128] = "";
     vd_size_t block = VD_NAN;
     std::vector<vd_size_t> files;
 };
 
 struct fileStat_t {
-    std::string path = ".";
-    std::string name = ".";
+    char path[128] = ".";
+    char name[128] = ".";
     vd_size_t size = 0;
     bool isFolder = false;
 };
@@ -55,7 +60,7 @@ class FileSystem
         vd_size_t open(std::string filename);
         void close(std::string path);
         void close(vd_size_t fd);
-        
+
         vd_size_t write(vd_size_t fd, void *ptr, vd_size_t len);
         vd_size_t read(vd_size_t fd, char *ptr, vd_size_t len);
         fileStat_t stat(std::string path);

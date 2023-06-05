@@ -1,10 +1,6 @@
 #include "fs.hpp"
 #include <iostream>
-
-#define getFirst(path) path.substr(0, path.find_first_of('/'))
-#define getRest(path) ((path.find_first_of('/') == std::string::npos) ? "" : path.substr(path.find_first_of('/') + 1))
-#define getLast(path) path.substr(path.find_last_of('/') + 1)
-#define getPath(path) path.substr(0, path.find_last_of('/'))
+#include <cstring>
 
 /*-------------------------PUBLIC----------------------------*/
 
@@ -24,7 +20,7 @@ FileSystem::FileSystem(vd_size_t nb_block, vd_size_t block_len)
     dirData_t mainFolder;
     mainFolder.block = MAIN_FOLDER_BLOCK;
     mainFolder.files.clear();
-    
+
     __saveFolder(mainFolder);
 
     __registerMagicBlock();
@@ -53,8 +49,8 @@ bool FileSystem::createFolder(std::string filename)
     dirData_t parentFolder = getFolder(path);
     dirData_t folder;
 
-    folder.path = path;
-    folder.name = name;
+    strncpy(folder.path, path.c_str(), 127);
+    strncpy(folder.name, name.c_str(), 127);
     folder.block = __getBlock();
     folder.files.clear();
 
@@ -69,8 +65,9 @@ bool FileSystem::create(std::string filename)
 {
     if (_magicBlock._nb_blocks -1 == _magicBlock._nb_used_blocks)
         return false;
-    
-    if (filename.back() == '/') throw std::invalid_argument("Filename can't end with a '/'");
+
+    if (filename.back() == '/')
+        throw std::invalid_argument("Filename can't end with a '/'");
 
     std::string path = getPath(filename);
     std::string name = getLast(filename);
@@ -79,11 +76,11 @@ bool FileSystem::create(std::string filename)
     dirData_t parentFolder = getFolder(path);
     fileData_t file;
 
-    file.name = name;
+    strncpy(file.name, name.c_str(), 127);
     std::fill_n(file.block, MAX_NUMBER_BLOCK, VD_NAN);
     file.block[0] = __getBlock();
     parentFolder.files.push_back(file.block[0]);
-    
+
     __saveFolder(parentFolder);
     __saveFile(file);
 
@@ -103,7 +100,7 @@ bool FileSystem::remove(std::string filename)
     path = (path == name) ? "." : path;
 
     dirData_t parentFolder = getFolder(path);
-    
+
     for (auto it = parentFolder.files.begin(); it != parentFolder.files.end(); it++) {
         auto file_tmp = __getFile(*it);
         if (file_tmp.name == name) {
@@ -146,21 +143,21 @@ bool FileSystem::removeDirectory(std::string filename)
 
 dirData_t FileSystem::getFolder(std::string path, dirData_t parentFolder)
 {
-    if (path == "/" || path.empty()) return __getFolder(MAIN_FOLDER_BLOCK);
+    if (path == "/" || path.empty())
+        return __getFolder(MAIN_FOLDER_BLOCK);
 
     if (parentFolder.block == VD_NAN)
         parentFolder = __getFolder(MAIN_FOLDER_BLOCK);
 
     if (path.back() == '/') path.erase(path.end() - 1);
-    if (path.front() == '/') path = "." + path;
+    if (path.front() == '/') path.erase(path.begin());
 
     std::string current_path = getFirst(path);
     std::string new_path = getRest(path);
     dirData_t folder = __getFolder(current_path, parentFolder);
 
-    if (!new_path.empty()) {
+    if (!new_path.empty())
         return getFolder(new_path, folder);
-    }
     return folder;
 }
 
@@ -223,8 +220,8 @@ fileStat_t FileSystem::stat(std::string filename)
     try {
         fileData_t file = getFile(filename);
         fileStat_t stat;
-        stat.path = file.path;
-        stat.name = file.name;
+        strcpy(stat.path, file.path);
+        strcpy(stat.name, file.name);
         stat.size = file.size;
         stat.isFolder = false;
         return stat;
@@ -232,8 +229,8 @@ fileStat_t FileSystem::stat(std::string filename)
         try {
             dirData_t folder = getFolder(filename);
             fileStat_t stat;
-            stat.path = folder.path;
-            stat.name = folder.name;
+            strcpy(stat.path, folder.path);
+            strcpy(stat.name, folder.name);
             stat.size = folder.files.size();
             stat.isFolder = true;
             return stat;
@@ -248,27 +245,27 @@ fileStat_t FileSystem::stat(std::string filename)
 
 #pragma region read_write
 
+// overwrite the data already writen
 vd_size_t FileSystem::write(vd_size_t fd, void *ptr, vd_size_t len)
 {
     fileData_t& file = __getFileFromFD(fd);
     vd_size_t tmpLen = 0;
 
-    if (file.block[0] == VD_NAN) return 0;
+    if (file.block[0] == VD_NAN)
+        return 0;
 
-    if (len + sizeof(fileData_t) > _magicBlock._blocks_size * MAX_NUMBER_BLOCK - sizeof(fileData_t))
-        len = _magicBlock._blocks_size * MAX_NUMBER_BLOCK - sizeof(fileData_t);
+    len = std::min(len + sizeof(fileData_t), _magicBlock._blocks_size * MAX_NUMBER_BLOCK - sizeof(fileData_t));
 
     file.size = len;
 
     len -= sizeof(fileData_t);
-    tmpLen = (len > _magicBlock._blocks_size - sizeof(fileData_t)) ? _magicBlock._blocks_size - sizeof(fileData_t) : len;
+    tmpLen = std::min(_magicBlock._blocks_size - sizeof(fileData_t), len);
     vd.__write(file.block[0], ptr, tmpLen, sizeof(fileData_t));
 
-    for (int i = 0; ++i && len > 0 && i < MAX_NUMBER_BLOCK; len -= tmpLen) {
-        if (file.block[i] == VD_NAN) {
-           file.block[i] = __getBlock(); 
-        }
-        tmpLen = (len > _magicBlock._blocks_size) ? _magicBlock._blocks_size : len;
+    for (int i = 0; len > 0 && i < MAX_NUMBER_BLOCK; len -= tmpLen, i++) {
+        if (file.block[i] == VD_NAN)
+           file.block[i] = __getBlock();
+        tmpLen = std::min(len, _magicBlock._blocks_size);
         vd.__write(file.block[i], ptr, tmpLen);
     }
 
@@ -308,21 +305,19 @@ vd_size_t FileSystem::read(vd_size_t fd, char *ptr, vd_size_t len)
 
 std::vector<fileStat_t> FileSystem::list(std::string path)
 {
-    std::cout << "list:" << path << std::endl;
     dirData_t folder = getFolder(path);
 
     return list(folder);
 }
 
-std::vector<fileStat_t> FileSystem::list(dirData_t current) {
+std::vector<fileStat_t> FileSystem::list(dirData_t current)
+{
     std::vector<fileStat_t> result;
-    if (current.block == VD_NAN) current = __getFolder(MAIN_FOLDER_BLOCK);
 
-    std::cout << "list;" << current.path << std::endl;
-    for (auto it: current.files) {
+    if (current.block == VD_NAN)
+        current = __getFolder(MAIN_FOLDER_BLOCK);
+    for (auto it: current.files)
         result.push_back(__stat(it));
-    }
-
     return result;
 }
 
@@ -350,7 +345,7 @@ vd_size_t FileSystem::__newFd()
 {
     if (_fds.size() == 0)
         return 3; // 0,1,2 are use by the system(its not relate to our file descriptor but why not c:)
-    
+
     for (auto key = _fds.begin(), it = _fds.begin().operator++(); it != _fds.end(); it++, key++)
         if (key->first + 1 != it->first)
             return key->first + 1;
@@ -384,6 +379,7 @@ void FileSystem::__registerMagicBlock()
 
     vd.__write(MAGICBLOCK_BLOCK, &_magicBlock, offset);
 
+    // fill freeblock
     vd_size_t size = _magicBlock._free_blocks.size();
     vd.__write(MAGICBLOCK_BLOCK, &size, sizeof(vd_size_t), offset);
     offset += sizeof(vd_size_t);
@@ -394,10 +390,10 @@ void FileSystem::__registerMagicBlock()
 void FileSystem::__getMagicBlock()
 {
     vd.__read(MAGICBLOCK_BLOCK, &_magicBlock, sizeof(MagicBlock_t) - sizeof(std::vector<vd_size_t>));
-    
+
     vd_size_t size = 0;
     vd.__read(MAGICBLOCK_BLOCK, &size, sizeof(vd_size_t), sizeof(MagicBlock_t) - sizeof(std::vector<vd_size_t>));
-    
+
     _magicBlock._free_blocks.resize(size);
     vd.__read(MAGICBLOCK_BLOCK, _magicBlock._free_blocks.data(), size * sizeof(vd_size_t), sizeof(MagicBlock_t) - sizeof(std::vector<vd_size_t>));
 }
@@ -423,26 +419,24 @@ void FileSystem::__remove(std::vector<vd_size_t> blocks)
 
 void FileSystem::__saveFolder(dirData_t folder)
 {
-    int sizef = sizeof(dirData_t) - sizeof(std::vector<vd_size_t>);
-    vd_size_t offset = std::abs(sizef);
-    vd.__write(folder.block, &folder, offset);
+    vd_size_t sizef = sizeof(dirData_t) - sizeof(std::vector<vd_size_t>);
+
+    vd.__write(folder.block, &folder, sizef);
 
     vd_size_t size = folder.files.size();
-    vd.__write(folder.block, &size, sizeof(vd_size_t), offset);
-    offset += sizeof(vd_size_t);
+    vd.__write(folder.block, &size, sizeof(vd_size_t), sizef);
+    sizef += sizeof(vd_size_t);
 
-    vd.__write(folder.block, folder.files.data(), size * sizeof(vd_size_t), offset);
+    vd.__write(folder.block, folder.files.data(), size * sizeof(vd_size_t), sizef);
 }
 
 dirData_t FileSystem::__getFolder(std::string name, dirData_t parent)
 {
     if (name == ".") return parent;
 
-    for (auto it : getFolderFromBlock(parent.files)) {
-        if (it.name == name) {
+    for (auto it : getFolderFromBlock(parent.files))
+        if (!strcmp(it.name, name.c_str()))
             return it;
-        }
-    }
     throw std::runtime_error("FileSystem::getFolder(): folder not found");
 }
 
@@ -450,22 +444,22 @@ dirData_t FileSystem::__getFolder(vd_size_t block)
 {
     dirData_t folder;
     int sizef = sizeof(dirData_t) - sizeof(std::vector<vd_size_t>);
+    vd_size_t size;
     vd_size_t offset = std::abs(sizef);
+
     vd.__read(block, &folder, offset);
-    
     if (std::strcmp(folder.conf, FOLDER_CONF) != 0) {
         if (std::strcmp(folder.conf, FILE_CONF) == 0) return dirData_t();
         std::cerr << "error block:" << block << " conf= " << folder.conf  << std::endl;
         throw std::runtime_error("FileSystem::getFolderFromBlock(): the block dont refere to a dirData_t");
     }
 
-    vd_size_t size;
     vd.__read(block, &size, sizeof(vd_size_t), offset);
     offset += sizeof(vd_size_t);
 
     folder.files.resize(size);
     vd.__read(block, folder.files.data(), size * sizeof(vd_size_t), offset);
-    
+
     return folder;
 }
 
@@ -520,15 +514,15 @@ fileStat_t FileSystem::__stat(vd_size_t block)
 
     if (strcmp(conf, FILE_CONF) == 0) {
         fileData_t file = __getFile(block);
-        stat.path = file.path;
-        stat.name = file.name;
+        strcpy(stat.path, file.path);
+        strcpy(stat.name, file.name);
         stat.size = file.size;
         stat.isFolder = false;
 
     } else if (strcmp(conf, FOLDER_CONF) == 0) {
         dirData_t folder = __getFolder(block);
-        stat.path = folder.path;
-        stat.name = folder.name;
+        strcpy(stat.path, folder.path);
+        strcpy(stat.name, folder.name);
         stat.size = folder.files.size();
         stat.isFolder = true;
     } else {

@@ -58,6 +58,7 @@ class Prompt
         PromptCommandResultEnum fnRm(const PromptCommand &_cmd);
         PromptCommandResultEnum fnMkdir(const PromptCommand &_cmd);
         PromptCommandResultEnum fnEcho(const PromptCommand &_cmd);
+        PromptCommandResultEnum fnSave(const PromptCommand &_cmd);
 
     private:
 #if defined(TEST_ENABLED)

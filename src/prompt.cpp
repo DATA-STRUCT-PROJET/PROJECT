@@ -4,6 +4,7 @@
 #include <string>
 #include <iostream>
 #include <algorithm>
+#include <cstring>
 
 PromptCommand::PromptCommand(std::vector<std::string> _args)
     : m_args(_args)
@@ -54,15 +55,16 @@ void Prompt::generateMap()
     if (isGenerated)
         return;
     isGenerated = true;
-    m_prompMap["cd"] = &Prompt::fnCd; // done
-    m_prompMap["ls"] = &Prompt::fnLs; // done
-    m_prompMap["tree"] = &Prompt::fnTree;
-    m_prompMap["cat"] = &Prompt::fnCat; // done
-    m_prompMap["touch"] = &Prompt::fnTouch; // need test
+    m_prompMap["cd"] = &Prompt::fnCd; // need some clarification on the API behavior
+    m_prompMap["ls"] = &Prompt::fnLs;
+    m_prompMap["tree"] = &Prompt::fnTree; // need an implementation
+    m_prompMap["cat"] = &Prompt::fnCat;
+    m_prompMap["touch"] = &Prompt::fnTouch;
     m_prompMap["rmdir"] = &Prompt::fnRmdir;
     m_prompMap["rm"] = &Prompt::fnRm;
     m_prompMap["mkdir"] = &Prompt::fnMkdir;
-    m_prompMap["echo"] = &Prompt::fnEcho; // done
+    m_prompMap["echo"] = &Prompt::fnEcho;
+    m_prompMap["save"] = &Prompt::fnSave; // need testing
 }
 
 #pragma region Command function
@@ -70,19 +72,43 @@ void Prompt::generateMap()
 PromptCommandResultEnum Prompt::fnCd(const PromptCommand &_cmd)
 {
     fileStat_t stat;
+    std::string folder = m_cdir;
 
     if (_cmd.getArgs().size() != 1)
         return PromptCommandResultEnum::ERROR;
     try {
-        stat = m_fs.stat(m_cdir + _cmd.getArgs().front());
-        if (stat.isFolder)
-            m_cdir = stat.name;
-        else
+        if (_cmd.getArgs().front() == "..") {
+            if (m_cdir == "/") {
+                m_os << "cd: " << _cmd.getArgs().front() << ": No such file or directory" << std::endl;
+                return PromptCommandResultEnum::FAILURE;
+            }
+            folder = getPath(m_cdir);
+            if (folder.empty())
+                folder = "/";
+        } else {
+            if (folder.back() != '/' && _cmd.getArgs().front().front() != '/')
+                folder += "/";
+            folder += _cmd.getArgs().front();
+        }
+        stat = m_fs.stat(folder);
+        if (stat.isFolder) {
+            m_cdir.clear();
+            if (strcmp(stat.path, "/")) {
+                if (!strlen(stat.path)) m_cdir = "/";
+                for (size_t it = 0; stat.path[it]; it++) m_cdir += stat.path[it];
+                if (strlen(stat.path)) m_cdir += "/";
+                for (size_t it = 0; stat.name[it]; it++) m_cdir += stat.name[it];
+            } else {
+                m_cdir = "/";
+            }
+        } else {
             m_os << "cd: " << _cmd.getArgs().front() << ": Not a directory" << std::endl;
+        }
     } catch (std::exception &_e) {
         std::ignore = _e;
 
         m_os << "cd: " << _cmd.getArgs().front() << ": No such file or directory" << std::endl;
+        return PromptCommandResultEnum::FAILURE;
     }
     return static_cast<PromptCommandResultEnum>(stat.isFolder);
 }
@@ -122,11 +148,10 @@ PromptCommandResultEnum Prompt::fnLs(const PromptCommand &_cmd)
         }
     } else {
         try {
-        for (const auto &_file : m_fs.list(m_cdir))
-            m_os << _file.name << '\t';
-        m_os << std::endl;
+            for (const auto &_file : m_fs.list(m_cdir))
+                m_os << _file.name << '\t';
+            m_os << std::endl;
         } catch (std::exception &_e) {
-            
             std::cerr << _e.what() << std::endl;
             ret = PromptCommandResultEnum::FAILURE;
         }
@@ -187,13 +212,10 @@ PromptCommandResultEnum Prompt::fnTouch(const PromptCommand &_cmd)
     if (_cmd.getArgs().empty())
         return PromptCommandResultEnum::FAILURE;
     try {
-        m_fs.create(m_cdir + "/" +_cmd.getArgs().front());
-        // stat = m_fs.stat(_cmd.getArgs().front());
+        stat = m_fs.stat(_cmd.getArgs().front());
     } catch (std::exception &_e) {
-        // std::ignore = _e;
-        std::cerr << _e.what() << std::endl;
-        // std::cerr << "command touch= " << m_cdir << _cmd.getArgs().front() << std::endl;
-        // m_fs.create(m_cdir, _cmd.getArgs().front());
+        std::ignore = _e;
+        m_fs.create(m_cdir + "/" + _cmd.getArgs().front());
     }
     return PromptCommandResultEnum::SUCCESS;
 }
@@ -214,12 +236,15 @@ PromptCommandResultEnum Prompt::fnRm(const PromptCommand &_cmd)
 
 PromptCommandResultEnum Prompt::fnMkdir(const PromptCommand &_cmd)
 {
+    std::string folder = m_cdir;
+
     if (_cmd.getArgs().size() != 1)
         return PromptCommandResultEnum::ERROR;
-    try { 
-        return static_cast<PromptCommandResultEnum>(m_fs.createFolder(m_cdir + _cmd.getArgs().front()));
+    try {
+        if (folder.back() != '/' && _cmd.getArgs().front().front() != '/')
+            folder += "/";
+        return static_cast<PromptCommandResultEnum>(m_fs.createFolder(folder + _cmd.getArgs().front()));
     } catch (std::exception &_e) {
-        // std::cerr << _e.what() << std::endl;
         std::ignore = _e;
         std::cerr << "command mkdir= " << m_cdir << _cmd.getArgs().front() << std::endl;
         return PromptCommandResultEnum::ERROR;
@@ -237,7 +262,7 @@ PromptCommandResultEnum Prompt::fnEcho(const PromptCommand &_cmd)
         m_os << "Concatenate DATA(s) to FILE." << std::endl;
         return PromptCommandResultEnum::SUCCESS;
     }
-	if (_cmd.getArgs().size() < 2)
+	if (_cmd.getArgs().size() != 2)
         return PromptCommandResultEnum::FAILURE;
     path = _cmd.getArgs().front();
     try {
@@ -253,15 +278,24 @@ PromptCommandResultEnum Prompt::fnEcho(const PromptCommand &_cmd)
         return PromptCommandResultEnum::FAILURE;
     }
     fd = m_fs.open(path);
-    for (size_t it = 0; it < _cmd.getArgs().size(); it++) {
-        // m_fs.write(fd, reinterpret_cast<const void *>(_cmd.getArgs().at(it).data()), _cmd.getArgs().at(it).size());
-        // not working?
-        m_fs.write(fd, (void *)_cmd.getArgs().at(it).data(), _cmd.getArgs().at(it).size());
-        // if (it != _cmd.getArgs().size())
-        //     m_fs.write(fd, (void *)"\n", 1); // write dont concat!!!!!
-    } 
+    m_fs.write(fd, (void *)_cmd.getArgs().front().data(), _cmd.getArgs().front().size());
     m_fs.close(fd);
     return PromptCommandResultEnum::SUCCESS;
+}
+
+PromptCommandResultEnum Prompt::fnSave(const PromptCommand &_cmd)
+{
+    if (!_cmd.getArgs().empty() && (_cmd.getArgs().front() == "-h" || _cmd.getArgs().front() == "--help")) {
+        m_os << "Usage: save FILE" << std::endl
+        m_os << "Save the actual virtual disk into the FILE." << std::endl;
+        return PromptCommandResultEnum::SUCCESS;
+    }
+    if (_cmd.getArgs().size() == 1) {
+        m_fs.save(_cmd.getArgs().front());
+        std::cout << "The FileSystem as been saved under the file name: " << _cmd.getArgs().front() << std::endl;
+        return PromptCommandResultEnum::SUCCESS;
+    }
+    return PromptCommandResultEnum::FAILURE;
 }
 
 #pragma endregion
