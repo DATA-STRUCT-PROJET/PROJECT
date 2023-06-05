@@ -43,6 +43,8 @@ PromptCommandResultEnum Prompt::process(const std::string &line)
             if (_key == cmd.getName())
                 return (this->*_fn)(cmd);
     } catch (std::exception &_e) {
+        std::ignore = _e;
+
         return PromptCommandResultEnum::FAILURE;
     }
     return PromptCommandResultEnum::ERROR;
@@ -286,7 +288,7 @@ PromptCommandResultEnum Prompt::fnEcho(const PromptCommand &_cmd)
 PromptCommandResultEnum Prompt::fnSave(const PromptCommand &_cmd)
 {
     if (!_cmd.getArgs().empty() && (_cmd.getArgs().front() == "-h" || _cmd.getArgs().front() == "--help")) {
-        m_os << "Usage: save FILE" << std::endl
+        m_os << "Usage: save FILE" << std::endl;
         m_os << "Save the actual virtual disk into the FILE." << std::endl;
         return PromptCommandResultEnum::SUCCESS;
     }

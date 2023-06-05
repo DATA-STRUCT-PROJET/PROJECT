@@ -1,7 +1,10 @@
 #pragma once
 
 #include <map>
-#include <unistd.h>
+#if defined(__linux__)
+    #include <unistd.h>
+#endif
+
 #include "vd.hpp"
 
 #define MAGICBLOCK_BLOCK 0
@@ -9,8 +12,8 @@
 
 #define VD_NAN std::string::npos
 #define MAX_NUMBER_BLOCK 5
-#define FILE_CONF "CONF\0"
-#define FOLDER_CONF "COND\0"
+#define FILE_CONF "CONF"
+#define FOLDER_CONF "COND"
 
 #define getFirst(path) path.substr(0, path.find_first_of('/'))
 #define getRest(path) ((path.find_first_of('/') == std::string::npos) ? "" : path.substr(path.find_first_of('/') + 1))

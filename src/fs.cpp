@@ -49,8 +49,8 @@ bool FileSystem::createFolder(std::string filename)
     dirData_t parentFolder = getFolder(path);
     dirData_t folder;
 
-    strncpy(folder.path, path.c_str(), 127);
-    strncpy(folder.name, name.c_str(), 127);
+    std::strncpy(folder.path, path.c_str(), 127);
+    std::strncpy(folder.name, name.c_str(), 127);
     folder.block = __getBlock();
     folder.files.clear();
 
@@ -76,7 +76,7 @@ bool FileSystem::create(std::string filename)
     dirData_t parentFolder = getFolder(path);
     fileData_t file;
 
-    strncpy(file.name, name.c_str(), 127);
+    std::strncpy(file.name, name.c_str(), 127);
     std::fill_n(file.block, MAX_NUMBER_BLOCK, VD_NAN);
     file.block[0] = __getBlock();
     parentFolder.files.push_back(file.block[0]);
@@ -217,28 +217,32 @@ void FileSystem::close(vd_size_t fd) {
 
 fileStat_t FileSystem::stat(std::string filename)
 {
+    fileStat_t stat;
+
     try {
         fileData_t file = getFile(filename);
-        fileStat_t stat;
-        strcpy(stat.path, file.path);
-        strcpy(stat.name, file.name);
+
+        std::strcpy(stat.path, file.path);
+        std::strcpy(stat.name, file.name);
         stat.size = file.size;
         stat.isFolder = false;
-        return stat;
-    } catch (std::exception &e) {
+    } catch (std::exception &_e) {
+        std::ignore = _e;
+
         try {
             dirData_t folder = getFolder(filename);
-            fileStat_t stat;
-            strcpy(stat.path, folder.path);
-            strcpy(stat.name, folder.name);
+
+            std::strcpy(stat.path, folder.path);
+            std::strcpy(stat.name, folder.name);
             stat.size = folder.files.size();
             stat.isFolder = true;
-            return stat;
-        } catch (std::exception &e) {
+        } catch (std::exception &_e) {
+            std::ignore = _e;
+
             throw std::runtime_error((filename + ": file not found").c_str());
         }
     }
-    return fileStat_t(); // can't happen
+    return stat;
 }
 
 #pragma endregion
@@ -277,7 +281,7 @@ vd_size_t FileSystem::write(vd_size_t fd, void *ptr, vd_size_t len)
 vd_size_t FileSystem::read(vd_size_t fd, char *ptr, vd_size_t len)
 {
     fileData_t file = __getFileFromFD(fd);
-    int tmpLen = 0;
+    vd_size_t tmpLen = 0;
 
     if (file.block[0] == VD_NAN) return 0;
 
@@ -336,7 +340,9 @@ fileData_t &FileSystem::__getFileFromFD(vd_size_t fd)
     try {
         fileData_t& file = _fds.at(fd);
         return file;
-    } catch (std::out_of_range &e) {
+    } catch (std::out_of_range &_e) {
+        std::ignore = _e;
+
         throw std::runtime_error("fd not found");
     }
 }
@@ -514,15 +520,15 @@ fileStat_t FileSystem::__stat(vd_size_t block)
 
     if (strcmp(conf, FILE_CONF) == 0) {
         fileData_t file = __getFile(block);
-        strcpy(stat.path, file.path);
-        strcpy(stat.name, file.name);
+        std::strcpy(stat.path, file.path);
+        std::strcpy(stat.name, file.name);
         stat.size = file.size;
         stat.isFolder = false;
 
     } else if (strcmp(conf, FOLDER_CONF) == 0) {
         dirData_t folder = __getFolder(block);
-        strcpy(stat.path, folder.path);
-        strcpy(stat.name, folder.name);
+        std::strcpy(stat.path, folder.path);
+        std::strcpy(stat.name, folder.name);
         stat.size = folder.files.size();
         stat.isFolder = true;
     } else {
