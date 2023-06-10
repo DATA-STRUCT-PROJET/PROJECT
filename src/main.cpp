@@ -12,7 +12,7 @@ int main(int argc, char* argv[]) {
     Prompt prompt = Prompt(std::cout, fs);
     std::string line;
 
-    while (true) {
+    while (!std::cin.eof()) {
         std::cout << prompt.GetPromptString();
         std::getline(std::cin, line);
         PromptCommandResultEnum result = prompt.process(line);
