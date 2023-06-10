@@ -52,11 +52,6 @@ PromptCommandResultEnum Prompt::process(const std::string &line)
 
 void Prompt::generateMap()
 {
-    static bool isGenerated = false;
-
-    if (isGenerated)
-        return;
-    isGenerated = true;
     m_prompMap["cd"] = &Prompt::fnCd; // need some clarification on the API behavior
     m_prompMap["ls"] = &Prompt::fnLs;
     m_prompMap["tree"] = &Prompt::fnTree; // need an implementation
