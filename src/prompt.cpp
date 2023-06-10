@@ -338,7 +338,7 @@ PromptCommandResultEnum Prompt::fnEcho(const PromptCommand &_cmd)
         return PromptCommandResultEnum::FAILURE;
     }
     fd = m_fs.open(path);
-    m_fs.write(fd, (void *)_cmd.getArgs().front().data(), _cmd.getArgs().front().size());
+    m_fs.write(fd, (void *)_cmd.getArgs().back().data(), _cmd.getArgs().back().size());
     m_fs.close(fd);
     return PromptCommandResultEnum::SUCCESS;
 }
