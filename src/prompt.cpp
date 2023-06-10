@@ -149,8 +149,13 @@ PromptCommandResultEnum Prompt::fnLs(const PromptCommand &_cmd)
         }
     } else {
         try {
-            for (const auto &_file : m_fs.list(m_cdir))
-                m_os << _file.name << '\t';
+            for (const auto &_file : m_fs.list(m_cdir)) {
+                if (_file.isFolder) {
+                    m_os << "\x1b[34m" << _file.name << "\033[0m\t";
+                } else {
+                    m_os << _file.name << '\t';
+                }
+            }
             m_os << std::endl;
         } catch (std::exception &_e) {
             std::cerr << _e.what() << std::endl;
