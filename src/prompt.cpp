@@ -36,9 +36,8 @@ std::string Prompt::GetPromptString() const
 
 PromptCommandResultEnum Prompt::process(const std::string &line)
 {
-    PromptCommand cmd = parse(line);
-
     try {
+        PromptCommand cmd = parse(line);
         for (auto &[_key, _fn] : m_prompMap)
             if (_key == cmd.getName())
                 return (this->*_fn)(cmd);
@@ -312,6 +311,9 @@ PromptCommand Prompt::parse(const std::string &line)
     // handle "" for args
     while (std::getline(ss, token, ' '))
         args.push_back(token);
+    if (args.size() == 0 ){
+        throw std::runtime_error("No input provided");
+    }
     std::transform(args.at(0).begin(), args.at(0).end(), args.at(0).begin(), [] (const char c) {
         return std::tolower(c);
     });
