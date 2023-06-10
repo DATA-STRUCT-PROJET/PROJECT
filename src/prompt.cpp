@@ -41,6 +41,7 @@ PromptCommandResultEnum Prompt::process(const std::string &line)
         for (auto &[_key, _fn] : m_prompMap)
             if (_key == cmd.getName())
                 return (this->*_fn)(cmd);
+        m_os << "command not found: " << line << std::endl;
     } catch (std::exception &_e) {
         std::ignore = _e;
 
