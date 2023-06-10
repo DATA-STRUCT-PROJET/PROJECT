@@ -319,7 +319,7 @@ PromptCommandResultEnum Prompt::fnEcho(const PromptCommand &_cmd)
     vd_size_t fd;
     fileStat_t stat;
 
-    if (_cmd.getArgs().front() == "-h" || _cmd.getArgs().front() == "--help") {
+    if (_cmd.getArgs().empty() || _cmd.getArgs().front() == "-h" || _cmd.getArgs().front() == "--help") {
         m_os << "Usage: echo FILE [DATA]..." << std::endl;
         m_os << "Concatenate DATA(s) to FILE." << std::endl;
         return PromptCommandResultEnum::SUCCESS;
