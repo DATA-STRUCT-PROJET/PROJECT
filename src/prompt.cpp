@@ -187,7 +187,7 @@ PromptCommandResultEnum Prompt::fnCat(const PromptCommand &_cmd)
     }
     for (const auto &_path : _cmd.getArgs()) {
         try {
-            stat = m_fs.stat(_path);
+            stat = m_fs.stat(m_cdir + "/" +_path);
         } catch (std::exception &_e) {
             std::ignore = _e;
 
@@ -200,7 +200,7 @@ PromptCommandResultEnum Prompt::fnCat(const PromptCommand &_cmd)
             m_os << "cat: " << _path << ": is a directory" << std::endl;
             continue;
         }
-        fd = m_fs.open(_path); // check for fd == -1
+        fd = m_fs.open(m_cdir + "/" +_path); // check for fd == -1
         data.resize(stat.size);
         readlen = m_fs.read(fd, data.data(), stat.size);
 	    m_os << data;
@@ -217,11 +217,12 @@ PromptCommandResultEnum Prompt::fnTouch(const PromptCommand &_cmd)
 
     if (_cmd.getArgs().empty())
         return PromptCommandResultEnum::FAILURE;
+    std::string filename = m_cdir + "/" + _cmd.getArgs().front();
     try {
-        stat = m_fs.stat(_cmd.getArgs().front());
+        stat = m_fs.stat(filename);
     } catch (std::exception &_e) {
         std::ignore = _e;
-        m_fs.create(m_cdir + "/" + _cmd.getArgs().front());
+        m_fs.create(filename);
     }
     return PromptCommandResultEnum::SUCCESS;
 }
@@ -234,7 +235,7 @@ PromptCommandResultEnum Prompt::fnRmdir(const PromptCommand &_cmd)
     std::string dirname = _cmd.getArgs().front();
     fileStat_t stat;
     try {
-        stat = m_fs.stat(dirname);
+        stat = m_fs.stat(m_cdir + "/" + dirname);
     } catch (std::exception &_e) {
         std::ignore = _e;
 
@@ -248,7 +249,7 @@ PromptCommandResultEnum Prompt::fnRmdir(const PromptCommand &_cmd)
     }
 
     try {
-        if (m_fs.removeDirectory(dirname)) {
+        if (m_fs.removeDirectory(m_cdir + "/" + dirname)) {
             return PromptCommandResultEnum::SUCCESS;
         } else {
             return PromptCommandResultEnum::FAILURE;
@@ -268,7 +269,7 @@ PromptCommandResultEnum Prompt::fnRm(const PromptCommand &_cmd)
     std::string filename = _cmd.getArgs().front();
     fileStat_t stat;
     try {
-        stat = m_fs.stat(filename);
+        stat = m_fs.stat(m_cdir + "/" + filename);
     } catch (std::exception &_e) {
         std::ignore = _e;
 
@@ -282,7 +283,7 @@ PromptCommandResultEnum Prompt::fnRm(const PromptCommand &_cmd)
     }
     
     try {
-        if (m_fs.remove(filename)) {
+        if (m_fs.remove(m_cdir + "/" + filename)) {
             return PromptCommandResultEnum::SUCCESS;
         } else {
             return PromptCommandResultEnum::FAILURE;
@@ -326,7 +327,7 @@ PromptCommandResultEnum Prompt::fnEcho(const PromptCommand &_cmd)
         return PromptCommandResultEnum::FAILURE;
     path = _cmd.getArgs().front();
     try {
-        stat = m_fs.stat(path);
+        stat = m_fs.stat(m_cdir + "/" + path);
     } catch (std::exception &_e) {
         std::ignore = _e;
 
@@ -337,7 +338,7 @@ PromptCommandResultEnum Prompt::fnEcho(const PromptCommand &_cmd)
         m_os << path << ": is a directory" << std::endl;
         return PromptCommandResultEnum::FAILURE;
     }
-    fd = m_fs.open(path);
+    fd = m_fs.open(m_cdir + "/" + path);
     m_fs.write(fd, (void *)_cmd.getArgs().back().data(), _cmd.getArgs().back().size());
     m_fs.close(fd);
     return PromptCommandResultEnum::SUCCESS;
