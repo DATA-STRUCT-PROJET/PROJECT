@@ -192,7 +192,7 @@ PromptCommandResultEnum Prompt::fnCat(const PromptCommand &_cmd)
         }
         if (stat.isFolder) {
             ret = PromptCommandResultEnum::FAILURE;
-            m_os << _path << ": is a directory" << std::endl;
+            m_os << "cat: " << _path << ": is a directory" << std::endl;
             continue;
         }
         fd = m_fs.open(_path); // check for fd == -1
@@ -225,14 +225,68 @@ PromptCommandResultEnum Prompt::fnRmdir(const PromptCommand &_cmd)
 {
     if (_cmd.getArgs().size() != 1)
         return PromptCommandResultEnum::ERROR;
-    return static_cast<PromptCommandResultEnum>(m_fs.removeDirectory(_cmd.getArgs().front()));
+
+    std::string dirname = _cmd.getArgs().front();
+    fileStat_t stat;
+    try {
+        stat = m_fs.stat(dirname);
+    } catch (std::exception &_e) {
+        std::ignore = _e;
+
+        m_os << "rmdir: " << dirname << ": No such file or directory" << std::endl;
+        return PromptCommandResultEnum::FAILURE;
+    }
+
+    if (!stat.isFolder) {
+        m_os << "rmdir: " << dirname << ": is a file" << std::endl;
+        return PromptCommandResultEnum::FAILURE;
+    }
+
+    try {
+        if (m_fs.removeDirectory(dirname)) {
+            return PromptCommandResultEnum::SUCCESS;
+        } else {
+            return PromptCommandResultEnum::FAILURE;
+        }
+    }
+    catch (std::exception &_e){
+        std::cerr << _e.what() << std::endl;
+        return PromptCommandResultEnum::ERROR;
+    }
 }
 
 PromptCommandResultEnum Prompt::fnRm(const PromptCommand &_cmd)
 {
     if (_cmd.getArgs().size() != 1)
         return PromptCommandResultEnum::ERROR;
-    return static_cast<PromptCommandResultEnum>(m_fs.remove(_cmd.getArgs().front()));
+
+    std::string filename = _cmd.getArgs().front();
+    fileStat_t stat;
+    try {
+        stat = m_fs.stat(filename);
+    } catch (std::exception &_e) {
+        std::ignore = _e;
+
+        m_os << "rm: " << filename << ": No such file or directory" << std::endl;
+        return PromptCommandResultEnum::FAILURE;
+    }
+
+    if (stat.isFolder) {
+        m_os << "rm: " << filename << ": is a directory" << std::endl;
+        return PromptCommandResultEnum::FAILURE;
+    }
+    
+    try {
+        if (m_fs.remove(filename)) {
+            return PromptCommandResultEnum::SUCCESS;
+        } else {
+            return PromptCommandResultEnum::FAILURE;
+        }
+    }
+    catch (std::exception &_e){
+        std::cerr << _e.what() << std::endl;
+        return PromptCommandResultEnum::ERROR;
+    }
 }
 
 PromptCommandResultEnum Prompt::fnMkdir(const PromptCommand &_cmd)
