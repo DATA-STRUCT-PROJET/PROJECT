@@ -159,7 +159,7 @@ PromptCommandResultEnum Prompt::fnLs(const PromptCommand &_cmd)
             }
             m_os << std::endl;
         } catch (std::exception &_e) {
-            std::cerr << _e.what() << std::endl;
+            m_os << _e.what() << std::endl;
             ret = PromptCommandResultEnum::FAILURE;
         }
     }
@@ -257,7 +257,7 @@ PromptCommandResultEnum Prompt::fnRmdir(const PromptCommand &_cmd)
         }
     }
     catch (std::exception &_e){
-        std::cerr << _e.what() << std::endl;
+        m_os << _e.what() << std::endl;
         return PromptCommandResultEnum::ERROR;
     }
 }
@@ -291,7 +291,7 @@ PromptCommandResultEnum Prompt::fnRm(const PromptCommand &_cmd)
         }
     }
     catch (std::exception &_e){
-        std::cerr << _e.what() << std::endl;
+        m_os << _e.what() << std::endl;
         return PromptCommandResultEnum::ERROR;
     }
 }
@@ -308,7 +308,7 @@ PromptCommandResultEnum Prompt::fnMkdir(const PromptCommand &_cmd)
         return static_cast<PromptCommandResultEnum>(m_fs.createFolder(folder + _cmd.getArgs().front()));
     } catch (std::exception &_e) {
         std::ignore = _e;
-        std::cerr << "command mkdir= " << m_cdir << _cmd.getArgs().front() << std::endl;
+        m_os << "command mkdir= " << m_cdir << _cmd.getArgs().front() << std::endl;
         return PromptCommandResultEnum::ERROR;
     }
 }
@@ -354,7 +354,7 @@ PromptCommandResultEnum Prompt::fnSave(const PromptCommand &_cmd)
     }
     if (_cmd.getArgs().size() == 1) {
         m_fs.save(_cmd.getArgs().front());
-        std::cout << "The FileSystem as been saved under the file name: " << _cmd.getArgs().front() << std::endl;
+        m_os << "The FileSystem as been saved under the file name: " << _cmd.getArgs().front() << std::endl;
         return PromptCommandResultEnum::SUCCESS;
     }
     return PromptCommandResultEnum::FAILURE;
