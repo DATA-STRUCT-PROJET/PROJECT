@@ -125,7 +125,7 @@ PromptCommandResultEnum Prompt::fnLs(const PromptCommand &_cmd)
     if (narg > 0) {
         for (const auto &_path : _cmd.getArgs()) {
             try {
-                stat = m_fs.stat(_path);
+                stat = m_fs.stat(m_cdir + _path);
             } catch (std::exception &_e) {
                 std::ignore = _e;
 
@@ -136,7 +136,7 @@ PromptCommandResultEnum Prompt::fnLs(const PromptCommand &_cmd)
             if (narg > 1)
                 m_os << _path << ":" << std::endl;
             dir = m_cdir + _path;
-            for (auto &_file : m_fs.list(dir))
+            for (auto &_file : m_fs.list(m_cdir + dir))
                 m_os << _file.name << '\t';
             m_os << std::endl;
             if (narg > 1)
