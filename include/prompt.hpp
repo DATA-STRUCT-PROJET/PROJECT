@@ -70,6 +70,9 @@ class Prompt
 #endif
 
         [[nodiscard]] static PromptCommand parse(const std::string &line);
+        
+        void recursiveTree(const std::string &path, int depth);
+        std::string getDirectoryName(const std::string &path) const;
 
         FileSystem &m_fs;
         std::ostream &m_os;

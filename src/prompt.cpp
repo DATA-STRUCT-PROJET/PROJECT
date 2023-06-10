@@ -163,7 +163,49 @@ PromptCommandResultEnum Prompt::fnLs(const PromptCommand &_cmd)
 
 PromptCommandResultEnum Prompt::fnTree(const PromptCommand &_cmd)
 {
-    return PromptCommandResultEnum::ERROR;
+    if (!_cmd.getArgs().empty() && (_cmd.getArgs().front() == "-h" || _cmd.getArgs().front() == "--help")) {
+        m_os << "Usage: tree" << std::endl;
+        m_os << "Display the directory tree starting from the current working directory." << std::endl;
+        return PromptCommandResultEnum::SUCCESS;
+    }
+
+    try {
+        recursiveTree(m_cdir, 0);
+        return PromptCommandResultEnum::SUCCESS;
+    } catch (std::exception &_e) {
+        m_os << _e.what() << std::endl;
+        return PromptCommandResultEnum::ERROR;
+    }
+}
+
+void Prompt::recursiveTree(const std::string &path, int depth)
+{
+    const std::string INDENT = "|  ";
+
+    std::vector<fileStat_t> files = m_fs.list(path);
+
+    m_os << std::string(depth * INDENT.length(), ' ') << "|-- " << getDirectoryName(path) << std::endl;
+
+    for (const auto &file : files) {
+        if (file.isFolder) {
+            if (depth == 0) {
+                recursiveTree(std::string("/") + file.name, depth + 1);
+            } else {
+                recursiveTree(path + '/' + file.name, depth + 1);
+            }
+        } else {
+            m_os << std::string((depth + 1) * INDENT.length(), ' ') << "|-- " << file.name << std::endl;
+        }
+    }
+}
+
+
+std::string Prompt::getDirectoryName(const std::string &path) const
+{
+    size_t lastSlashPos = path.find_last_of('/');
+    if (lastSlashPos != std::string::npos && lastSlashPos != path.length() - 1)
+        return path.substr(lastSlashPos + 1);
+    return path;
 }
 
 PromptCommandResultEnum Prompt::fnCat(const PromptCommand &_cmd)
