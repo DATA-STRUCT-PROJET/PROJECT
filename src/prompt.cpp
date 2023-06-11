@@ -76,6 +76,10 @@ PromptCommandResultEnum Prompt::fnCd(const PromptCommand &_cmd)
     
     std::string directory = _cmd.getArgs().front();
     try {
+        if (directory == "/") {
+            m_cdir = "/";
+            return PromptCommandResultEnum::SUCCESS;
+        }
         if (directory == "..") {
             if (m_cdir == "/") {
                 m_os << "cd: " << directory << ": No such file or directory" << std::endl;
