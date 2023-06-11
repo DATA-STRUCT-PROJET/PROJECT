@@ -245,7 +245,7 @@ PromptCommandResultEnum Prompt::fnCat(const PromptCommand &_cmd)
         }
         if (stat.isFolder) {
             ret = PromptCommandResultEnum::FAILURE;
-            m_os << "cat: " << _path << ": is a directory" << std::endl;
+            m_os << "cat: " << _path << ": Is a directory" << std::endl;
             continue;
         }
         fd = m_fs.open(m_cdir + "/" +_path); // check for fd == -1
@@ -326,7 +326,7 @@ PromptCommandResultEnum Prompt::fnRm(const PromptCommand &_cmd)
     }
 
     if (stat.isFolder) {
-        m_os << "rm: " << filename << ": is a directory" << std::endl;
+        m_os << "rm: " << filename << ": Is a directory" << std::endl;
         return PromptCommandResultEnum::FAILURE;
     }
     
@@ -383,7 +383,7 @@ PromptCommandResultEnum Prompt::fnEcho(const PromptCommand &_cmd)
         return PromptCommandResultEnum::FAILURE;
     }
     if (stat.isFolder) {
-        m_os << "echo: " << path << ": is a directory" << std::endl;
+        m_os << "echo: " << path << ": Is a directory" << std::endl;
         return PromptCommandResultEnum::FAILURE;
     }
     fd = m_fs.open(m_cdir + "/" + path);

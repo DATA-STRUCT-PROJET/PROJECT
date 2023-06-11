@@ -51,7 +51,7 @@ INSTANTIATE_TEST_SUITE_P(
         std::make_tuple("file1.txt", "this a test file", PromptCommandResultEnum::SUCCESS),
         std::make_tuple("file2.txt", "this another test file", PromptCommandResultEnum::SUCCESS),
         std::make_tuple("file3.txt", "cat: file3.txt: No such file or directory", PromptCommandResultEnum::FAILURE),
-        std::make_tuple("folder1", "cat: folder1: is a directory", PromptCommandResultEnum::FAILURE)
+        std::make_tuple("folder1", "cat: folder1: Is a directory", PromptCommandResultEnum::FAILURE)
     )
 );
 
