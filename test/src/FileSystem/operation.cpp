@@ -203,3 +203,37 @@ TEST_F(FileSystemOperation_basic, get_folder_non_exist)
     },
                  std::runtime_error);
 }
+
+TEST_F(FileSystemOperation_basic, stat_file)
+{
+    ASSERT_TRUE(m_fs.create("file1"));
+    m_fs.stat("file1");
+    m_fs.stat("/file1");
+    m_fs.stat("//file1");
+    m_fs.stat("/./file1");
+}
+
+TEST_F(FileSystemOperation_basic, stat_folder)
+{
+    ASSERT_TRUE(m_fs.createFolder("folder1"));
+    m_fs.stat("folder1");
+    m_fs.stat("/folder1");
+    m_fs.stat("//folder1");
+    m_fs.stat("/./folder1");
+}
+
+TEST_F(FileSystemOperation_basic, stat_non_exist)
+{
+    EXPECT_THROW({
+        try
+        {
+            m_fs.stat("file1");
+        }
+        catch (const std::runtime_error &e)
+        {
+            EXPECT_STREQ("file1: file not found", e.what());
+            throw;
+        }
+    },
+                 std::runtime_error);
+}
