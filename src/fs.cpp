@@ -158,15 +158,20 @@ dirData_t FileSystem::getFolder(std::string path, dirData_t parentFolder)
     if (parentFolder.block == VD_NAN)
         parentFolder = __getFolder(MAIN_FOLDER_BLOCK);
 
-    if (path.back() == '/') path.erase(path.end() - 1);
-    if (path.front() == '/') path.erase(path.begin());
+    while (!path.empty() && path.back() == '/')
+        path.pop_back();
 
-    std::string current_path = getFirst(path);
-    std::string new_path = getRest(path);
+    while (!path.empty() && path.front() == '/')
+        path = path.substr(1);
+
+    std::string current_path = path.substr(0, path.find_first_of('/'));
+    std::string new_path = ((path.find_first_of('/') == std::string::npos) ? "" : path.substr(path.find_first_of('/') + 1));
+    
     dirData_t folder = __getFolder(current_path, parentFolder);
 
     if (!new_path.empty())
         return getFolder(new_path, folder);
+
     return folder;
 }
 
@@ -299,7 +304,7 @@ vd_size_t FileSystem::read(vd_size_t fd, char *ptr, vd_size_t len)
     tmpLen = (len > _magicBlock._blocks_size - sizeof(fileData_t)) ? _magicBlock._blocks_size - sizeof(fileData_t) : len;
     vd.__read(file.block[0], ptr, tmpLen, sizeof(fileData_t));
 
-    for (int i = 0; len > 0 && i < MAX_NUMBER_BLOCK; len -= tmpLen, i++) {
+    for (int i = 1; len > 0 && i < MAX_NUMBER_BLOCK; len -= tmpLen, i++) {
         if (file.block[i] == VD_NAN) {
             return -1;
         }
