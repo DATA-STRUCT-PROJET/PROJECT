@@ -262,7 +262,6 @@ vd_size_t FileSystem::write(vd_size_t fd, void *ptr, vd_size_t len)
 {
     fileData_t& file = __getFileFromFD(fd);
     vd_size_t tmpLen = 0;
-
     if (file.block[0] == VD_NAN)
         return 0;
         
@@ -284,13 +283,13 @@ vd_size_t FileSystem::write(vd_size_t fd, void *ptr, vd_size_t len)
 
     __saveFile(file);
 
-    return len;
+    return file.size;
 }
 
 vd_size_t FileSystem::read(vd_size_t fd, char *ptr, vd_size_t len)
 {
     fileData_t file = __getFileFromFD(fd);
-    vd_size_t tmpLen = 0;
+    vd_size_t tmpLen = 0, readSize = 0;
 
     if (file.block[0] == VD_NAN) return 0;
 
@@ -300,16 +299,17 @@ vd_size_t FileSystem::read(vd_size_t fd, char *ptr, vd_size_t len)
     tmpLen = (len > _magicBlock._blocks_size - sizeof(fileData_t)) ? _magicBlock._blocks_size - sizeof(fileData_t) : len;
     vd.__read(file.block[0], ptr, tmpLen, sizeof(fileData_t));
 
-    for (int i = 0; ++i && len > 0 && i < MAX_NUMBER_BLOCK; len -= tmpLen) {
+    for (int i = 0; len > 0 && i < MAX_NUMBER_BLOCK; len -= tmpLen, i++) {
         if (file.block[i] == VD_NAN) {
             return -1;
         }
         ptr += tmpLen;
+        readSize += tmpLen;
         tmpLen = (len > _magicBlock._blocks_size) ? _magicBlock._blocks_size : len;
         vd.__read(file.block[i], ptr, tmpLen);
     }
 
-    return len;
+    return readSize;
 }
 
 #pragma endregion
@@ -452,7 +452,7 @@ dirData_t FileSystem::__getFolder(std::string name, dirData_t parent)
     for (auto it : getFolderFromBlock(parent.files))
         if (!strcmp(it.name, name.c_str()))
             return it;
-    throw std::runtime_error("FileSystem::getFolder(): folder not found");
+    throw std::runtime_error(name + ": folder not found");
 }
 
 dirData_t FileSystem::__getFolder(vd_size_t block)

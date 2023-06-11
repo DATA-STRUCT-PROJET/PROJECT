@@ -21,6 +21,7 @@ set(EXEC_FILE
 
 add_executable(Test
     ${EXEC_FILE}
+    src/FileSystem/operation.cpp
     src/Prompt/cat.cpp
     src/Prompt/cd.cpp
     src/Prompt/echo.cpp
