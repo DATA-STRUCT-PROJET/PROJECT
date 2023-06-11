@@ -83,7 +83,7 @@ class FileSystem
         // for promp commands (to review and remake later)
 
         bool remove(std::string filename);
-        bool removeDirectory(std::string filename);
+        bool removeFolder(std::string filename);
 
         std::vector<fileStat_t> list(std::string path);
         std::vector<fileStat_t> list(dirData_t current = dirData_t());

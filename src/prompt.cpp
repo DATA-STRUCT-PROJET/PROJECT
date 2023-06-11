@@ -297,7 +297,7 @@ PromptCommandResultEnum Prompt::fnRmdir(const PromptCommand &_cmd)
     }
 
     try {
-        if (m_fs.removeDirectory(m_cdir + "/" + dirname)) {
+        if (m_fs.removeFolder(m_cdir + "/" + dirname)) {
             return PromptCommandResultEnum::SUCCESS;
         } else {
             return PromptCommandResultEnum::FAILURE;

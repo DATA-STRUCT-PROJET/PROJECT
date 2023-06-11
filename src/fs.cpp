@@ -122,7 +122,7 @@ bool FileSystem::remove(std::string filename)
     return false;
 }
 
-bool FileSystem::removeDirectory(std::string filename)
+bool FileSystem::removeFolder(std::string filename)
 {
     if (filename.back() == '/') filename.erase(filename.end() -1);
 
