@@ -262,59 +262,66 @@ fileStat_t FileSystem::stat(std::string filename)
 
 #pragma region read_write
 
-// overwrite the data already writen
-vd_size_t FileSystem::write(vd_size_t fd, void *ptr, vd_size_t len)
+vd_size_t FileSystem::write(vd_size_t fd, void* ptr, vd_size_t len)
 {
     fileData_t& file = __getFileFromFD(fd);
     vd_size_t tmpLen = 0;
+    
     if (file.block[0] == VD_NAN)
         return 0;
         
-    file.size = len;
-
-    len = std::min(len + sizeof(fileData_t), _magicBlock._blocks_size * MAX_NUMBER_BLOCK - sizeof(fileData_t));
-
-
-    len -= sizeof(fileData_t);
-    tmpLen = std::min(_magicBlock._blocks_size - sizeof(fileData_t), len);
-    vd.__write(file.block[0], ptr, tmpLen, sizeof(fileData_t));
-
-    for (int i = 0; len > 0 && i < MAX_NUMBER_BLOCK; len -= tmpLen, i++) {
+    vd_size_t totalLen = len + sizeof(fileData_t);
+    vd_size_t remainingLen = totalLen;
+    vd_size_t blockOffset = sizeof(fileData_t);
+    
+    tmpLen = std::min(remainingLen, _magicBlock._blocks_size - blockOffset);
+    vd.__write(file.block[0], ptr, tmpLen, blockOffset);
+    remainingLen -= tmpLen;
+    
+    for (int i = 1; i < MAX_NUMBER_BLOCK && remainingLen > 0; i++) {
         if (file.block[i] == VD_NAN)
-           file.block[i] = __getBlock();
-        tmpLen = std::min(len, _magicBlock._blocks_size);
-        vd.__write(file.block[i], ptr, tmpLen);
+            file.block[i] = __getBlock();
+        
+        tmpLen = std::min(remainingLen, _magicBlock._blocks_size);
+        vd.__write(file.block[i], static_cast<char*>(ptr) + (totalLen - remainingLen), tmpLen);
+        remainingLen -= tmpLen;
     }
-
+    
+    file.size = len;
     __saveFile(file);
-
-    return file.size;
+    
+    return len;
 }
 
-vd_size_t FileSystem::read(vd_size_t fd, char *ptr, vd_size_t len)
+vd_size_t FileSystem::read(vd_size_t fd, char* ptr, vd_size_t len)
 {
     fileData_t file = __getFileFromFD(fd);
-    vd_size_t tmpLen = 0, readSize = 0;
-
-    if (file.block[0] == VD_NAN) return 0;
-
-    if (len + sizeof(fileData_t) > _magicBlock._blocks_size * MAX_NUMBER_BLOCK - sizeof(fileData_t))
-        len = _magicBlock._blocks_size * MAX_NUMBER_BLOCK - sizeof(fileData_t);
-
-    tmpLen = (len > _magicBlock._blocks_size - sizeof(fileData_t)) ? _magicBlock._blocks_size - sizeof(fileData_t) : len;
-    vd.__read(file.block[0], ptr, tmpLen, sizeof(fileData_t));
-
-    for (int i = 1; len > 0 && i < MAX_NUMBER_BLOCK; len -= tmpLen, i++) {
-        if (file.block[i] == VD_NAN) {
-            return -1;
-        }
-        ptr += tmpLen;
-        readSize += tmpLen;
-        tmpLen = (len > _magicBlock._blocks_size) ? _magicBlock._blocks_size : len;
-        vd.__read(file.block[i], ptr, tmpLen);
+    vd_size_t tmpLen = 0;
+    vd_size_t bytesRead = 0;
+    
+    if (file.block[0] == VD_NAN)
+        return 0;
+    
+    vd_size_t totalLen = file.size + sizeof(fileData_t);
+    vd_size_t remainingLen = std::min(len, totalLen);
+    vd_size_t blockOffset = sizeof(fileData_t);
+    
+    tmpLen = std::min(remainingLen, _magicBlock._blocks_size - blockOffset);
+    vd.__read(file.block[0], ptr, tmpLen, blockOffset);
+    remainingLen -= tmpLen;
+    bytesRead += tmpLen;
+    
+    for (int i = 1; i < MAX_NUMBER_BLOCK && remainingLen > 0; i++) {
+        if (file.block[i] == VD_NAN)
+            break;
+        
+        tmpLen = std::min(remainingLen, _magicBlock._blocks_size);
+        vd.__read(file.block[i], ptr + bytesRead, tmpLen);
+        remainingLen -= tmpLen;
+        bytesRead += tmpLen;
     }
-
-    return readSize;
+    
+    return bytesRead;
 }
 
 #pragma endregion
