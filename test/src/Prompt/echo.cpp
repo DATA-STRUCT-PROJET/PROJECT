@@ -73,24 +73,23 @@ class PromptECHO_error : public ::testing::TestWithParam<std::tuple<std::string,
         PromptECHO_error()
             : m_fs((vd_size_t)65535), m_prompt(std::cout, m_fs)
         {
+            m_fs.createFolder("folder1");
         }
 
         FileSystem m_fs;
         Prompt m_prompt;
 };
 
-TEST_P(PromptECHO_error, error_generic)
+TEST_F(PromptECHO_error, error_non_exist_file)
 {
     ::testing::internal::CaptureStdout();
-    ASSERT_EQ(PromptCommandResultEnum::FAILURE, m_prompt.process("echo " + std::get<0>(GetParam())));
-    ASSERT_EQ(std::get<1>(GetParam()) + "\n", ::testing::internal::GetCapturedStdout());
+    ASSERT_EQ(PromptCommandResultEnum::FAILURE, m_prompt.process("echo file3.txt AA"));
+    ASSERT_EQ("echo: file3.txt: No such file or directory\n", ::testing::internal::GetCapturedStdout());
 }
 
-INSTANTIATE_TEST_SUITE_P(
-    EchoErrorTest,
-    PromptECHO_error,
-    testing::Values(
-        std::make_tuple("file3.txt AA", "echo: file3.txt: No such file or directory"),
-        std::make_tuple("folder1 AA", "echo: folder1: Is a directory")
-    )
-);
+TEST_F(PromptECHO_error, error_folder)
+{
+    ::testing::internal::CaptureStdout();
+    ASSERT_EQ(PromptCommandResultEnum::FAILURE, m_prompt.process("echo folder1 AA"));
+    ASSERT_EQ("echo: folder1: Is a directory\n", ::testing::internal::GetCapturedStdout());
+}
