@@ -15,8 +15,6 @@
 #define FILE_CONF "CONF"
 #define FOLDER_CONF "COND"
 
-#define getFirst(path) path.substr(0, path.find_first_of('/'))
-#define getRest(path) ((path.find_first_of('/') == std::string::npos) ? "" : path.substr(path.find_first_of('/') + 1))
 #define getLast(path) path.substr(path.find_last_of('/') + 1)
 #define getPath(path) path.substr(0, path.find_last_of('/'))
 
