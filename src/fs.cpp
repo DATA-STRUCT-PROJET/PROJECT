@@ -46,9 +46,8 @@ bool FileSystem::createFolder(std::string filename)
     path = (path == name) ? "." : path;
 
     dirData_t parentFolder = getFolder(path);
-    for (auto it = parentFolder.files.begin(); it != parentFolder.files.end(); it++) {
-        auto file_tmp = __getFile(*it);
-        if (file_tmp.name == name) {
+    for (auto &_file : list(parentFolder)) {
+        if (!name.compare(_file.name)) {
             return false;
         }
     }
@@ -79,9 +78,8 @@ bool FileSystem::create(std::string filename)
     path = (path == name) ? "." : path;
 
     dirData_t parentFolder = getFolder(path);
-    for (auto it = parentFolder.files.begin(); it != parentFolder.files.end(); it++) {
-        auto file_tmp = __getFile(*it);
-        if (file_tmp.name == name) {
+    for (auto &_file : list(parentFolder)) {
+        if (!name.compare(_file.name)) {
             return false;
         }
     }
@@ -200,9 +198,8 @@ vd_size_t FileSystem::open(std::string filename)
         auto fd = __newFd();
         _fds[fd] = getFile(filename);
         return fd;
-    } catch (std::exception &e) {
-        std::cerr << "fd failed for file:\t " << filename << std::endl;
-        std::cerr << e.what() << std::endl;
+    } catch (std::exception &_e) {
+        std::ignore = _e;
     }
     return -1;
 }
