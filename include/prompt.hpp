@@ -44,6 +44,10 @@ class Prompt
 
         PromptCommandResultEnum process(const std::string &_line);
 
+        std::string getCurrentDirectory() const {
+            return m_cdir;
+        }
+
     protected:
         static inline std::map<std::string, PromptCommandResultEnum (Prompt::*)(const PromptCommand &)> m_prompMap;
 
@@ -61,18 +65,10 @@ class Prompt
         PromptCommandResultEnum fnSave(const PromptCommand &_cmd);
 
     private:
-#if defined(TEST_ENABLED)
-        FRIEND_TEST(PromptCD, basic);
-        FRIEND_TEST(PromptCD, same_directory);
-        FRIEND_TEST(PromptCD, up_directory);
-        FRIEND_TEST(PromptCD, unknow_target);
-        FRIEND_TEST(PromptCD, file_target);
-#endif
-
         [[nodiscard]] static PromptCommand parse(const std::string &line);
-        
+
         void recursiveTree(const std::string &path, int depth);
-        std::string getDirectoryName(const std::string &path) const;
+        [[nodiscard]] std::string getDirectoryName(const std::string &path) const;
 
         FileSystem &m_fs;
         std::ostream &m_os;

@@ -6,13 +6,29 @@ class PromptCAT_basic : public ::testing::TestWithParam<std::tuple<std::string, 
 {
     protected:
         PromptCAT_basic()
-            : m_fs(Path), m_prompt(std::cout, m_fs)
+            : m_fs((vd_size_t)65535), m_prompt(std::cout, m_fs)
         {
+        }
+
+        void SetUp() override 
+        {
+            std::vector<std::tuple<std::string, std::string>> metas = {
+                std::make_tuple("file1.txt", "this a test file"),
+                std::make_tuple("file2.txt", "this another test file"),
+            };
+            for (const auto& fileMeta : metas) {
+                std::string filename, data;
+                std::tie(filename, data) = fileMeta;
+                m_fs.create(filename);
+                vd_size_t fd = m_fs.open(filename);
+                m_fs.write(fd, (void*)data.c_str(), data.size());
+                m_fs.close(fd);
+            }
+            m_fs.createFolder(std::string("folder1"));
         }
 
         FileSystem m_fs;
         Prompt m_prompt;
-        static constexpr char *Path = (char *)"./VD/Promp";
 };
 
 TEST_P(PromptCAT_basic, basic_generic)
@@ -35,7 +51,7 @@ INSTANTIATE_TEST_SUITE_P(
         std::make_tuple("file1.txt", "this a test file", PromptCommandResultEnum::SUCCESS),
         std::make_tuple("file2.txt", "this another test file", PromptCommandResultEnum::SUCCESS),
         std::make_tuple("file3.txt", "cat: file3.txt: No such file or directory", PromptCommandResultEnum::FAILURE),
-        std::make_tuple("folder1", "folder1: is a directory", PromptCommandResultEnum::FAILURE)
+        std::make_tuple("folder1", "cat: folder1: is a directory", PromptCommandResultEnum::FAILURE)
     )
 );
 
@@ -43,13 +59,28 @@ class PromptCAT_multi : public ::testing::Test
 {
     protected:
         PromptCAT_multi()
-            : m_fs(Path), m_prompt(std::cout, m_fs)
+            : m_fs((vd_size_t)65535), m_prompt(std::cout, m_fs)
         {
+        }
+
+        void SetUp() override 
+        {
+            std::vector<std::tuple<std::string, std::string>> metas = {
+                std::make_tuple("file1.txt", "this a test file"),
+                std::make_tuple("file2.txt", "this another test file"),
+            };
+            for (const auto& fileMeta : metas) {
+                std::string filename, data;
+                std::tie(filename, data) = fileMeta;
+                m_fs.create(filename);
+                vd_size_t fd = m_fs.open(filename);
+                m_fs.write(fd, (void*)data.c_str(), data.size());
+                m_fs.close(fd);
+            }
         }
 
         FileSystem m_fs;
         Prompt m_prompt;
-        static constexpr char *Path = (char *)"./VD/Promp";
 };
 
 TEST_F(PromptCAT_multi, multiple)

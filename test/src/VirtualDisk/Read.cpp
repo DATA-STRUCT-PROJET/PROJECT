@@ -12,13 +12,21 @@ class VirtualDisk_read : public ::testing::TestWithParam<std::tuple<std::string,
 {
     protected:
         VirtualDisk_read()
-            : m_vd(Path)
+            : m_vd(NbBlock, SizeBlock)
         {
+        }
+
+        void SetUp() override 
+        {
+            std::string data1("expected data");
+            std::string data2("data from other block");
+            m_vd.__write(0, (void*)data1.c_str(), data1.size(), 0);
+            m_vd.__write(1, (void*)data2.c_str(), data2.size(), 0);
         }
 
         virtualDisk m_vd;
 
-        static constexpr char *Path = (char *)"./VD/VirtualDisk";
+        static constexpr vd_size_t NbBlock = 2;
         static constexpr vd_size_t SizeBlock = 42;
 };
 

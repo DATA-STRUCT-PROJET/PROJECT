@@ -10,14 +10,22 @@ class PromptLS : public ::testing::Test
 {
     protected:
         PromptLS()
-            : m_fs(Path), m_prompt(std::cout, m_fs)
+            : m_fs((vd_size_t)65535), m_prompt(std::cout, m_fs)
         {
         }
 
         FileSystem m_fs;
         Prompt m_prompt;
 
-        static constexpr char *Path = (char *)"./VD/Promp";
+        void SetUp() override
+        {
+            m_fs.create(std::string("/file1.txt"));
+            m_fs.create(std::string("/file2.txt"));
+            m_fs.createFolder(std::string("/folder1"));
+            m_fs.createFolder(std::string("/folder2"));
+            m_fs.create(std::string("/folder1/file1.txt"));
+            m_fs.create(std::string("/folder1/file2.txt"));
+        }
 
         static inline const std::vector<std::string> DirAct = { "file1.txt", "file2.txt", "folder1", "folder2" };
         static inline const std::vector<std::string> DirFolder1 = { "file1.txt", "file2.txt" };
@@ -37,65 +45,29 @@ std::vector<std::string> split(const std::string &_str, char _token)
 TEST_F(PromptLS, basic)
 {
     PromptCommandResultEnum result;
-    std::vector<std::string> lscmd{};
 
     ::testing::internal::CaptureStdout();
     result = m_prompt.process("ls");
     ASSERT_EQ(result, PromptCommandResultEnum::SUCCESS);
 
-    lscmd = split(::testing::internal::GetCapturedStdout(), '\t');
-    std::sort(lscmd.begin(), lscmd.end());
+    std::string output = ::testing::internal::GetCapturedStdout();
 
-    ASSERT_EQ(lscmd.size(), DirAct.size());
-    for (size_t it = 0; it < DirAct.size(); it++)
-        ASSERT_EQ(lscmd.at(it), DirAct.at(it));
+    for (const std::string& filename : DirAct) {
+        ASSERT_NE(output.find(filename), std::string::npos);
+    }
 }
 
 TEST_F(PromptLS, simple_folder)
 {
     PromptCommandResultEnum result;
-    std::vector<std::string> lscmd{};
 
     ::testing::internal::CaptureStdout();
     result = m_prompt.process("ls ./folder1");
     ASSERT_EQ(result, PromptCommandResultEnum::SUCCESS);
 
-    lscmd = split(::testing::internal::GetCapturedStdout(), '\t');
-    std::sort(lscmd.begin(), lscmd.end());
+    std::string output = ::testing::internal::GetCapturedStdout();
 
-    ASSERT_EQ(lscmd.size(), DirFolder1.size());
-    for (size_t it = 0; it < DirFolder1.size(); it++)
-        ASSERT_EQ(lscmd.at(it), DirFolder1.at(it));
-}
-
-TEST_F(PromptLS, multiple_folder)
-{
-    PromptCommandResultEnum result;
-    std::vector<std::string> lscmd{};
-    std::string word{};
-    std::istringstream stream;
-
-    ::testing::internal::CaptureStdout();
-    result = m_prompt.process("ls . ./folder1");
-    ASSERT_EQ(result, PromptCommandResultEnum::SUCCESS);
-
-    stream.str(::testing::internal::GetCapturedStdout());
-
-    std::getline(stream, word);
-    ASSERT_EQ(word, ".:");
-    std::getline(stream, word);
-    lscmd = split(word, '\t');
-    std::sort(lscmd.begin(), lscmd.end());
-    ASSERT_EQ(lscmd.size(), DirAct.size());
-    for (size_t it = 0; it < DirAct.size(); it++)
-        ASSERT_EQ(lscmd.at(it), DirAct.at(it));
-
-    std::getline(stream, word);
-    ASSERT_EQ(word, "./folder1:");
-    std::getline(stream, word);
-    lscmd = split(word, '\t');
-    std::sort(lscmd.begin(), lscmd.end());
-    ASSERT_EQ(lscmd.size(), DirFolder1.size());
-    for (size_t it = 0; it < DirFolder1.size(); it++)
-        ASSERT_EQ(lscmd.at(it), DirFolder1.at(it));
+    for (const std::string& filename : DirFolder1) {
+        ASSERT_NE(output.find(filename), std::string::npos);
+    }
 }

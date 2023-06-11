@@ -39,6 +39,9 @@ class virtualDisk
 
         friend class VirtualDisk_write;
         FRIEND_TEST(VirtualDisk_write, write_generic);
+
+        friend class VirtualDisk_read;
+        FRIEND_TEST(VirtualDisk_read, read_generic);
 #endif
 
         char *_magical = nullptr;

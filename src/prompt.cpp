@@ -41,7 +41,7 @@ PromptCommandResultEnum Prompt::process(const std::string &line)
         for (auto &[_key, _fn] : m_prompMap)
             if (_key == cmd.getName())
                 return (this->*_fn)(cmd);
-        m_os << "command not found: " << line << std::endl;
+        m_os << "command not found: " << cmd.getName() << std::endl;
     } catch (std::exception &_e) {
         std::ignore = _e;
 
@@ -70,13 +70,15 @@ PromptCommandResultEnum Prompt::fnCd(const PromptCommand &_cmd)
 {
     fileStat_t stat;
     std::string folder = m_cdir;
-
-    if (_cmd.getArgs().size() != 1)
-        return PromptCommandResultEnum::ERROR;
+    if (_cmd.getArgs().size() != 1) {
+        return PromptCommandResultEnum::ERROR; // TODO help?
+    }
+    
+    std::string directory = _cmd.getArgs().front();
     try {
-        if (_cmd.getArgs().front() == "..") {
+        if (directory == "..") {
             if (m_cdir == "/") {
-                m_os << "cd: " << _cmd.getArgs().front() << ": No such file or directory" << std::endl;
+                m_os << "cd: " << directory << ": No such file or directory" << std::endl;
                 return PromptCommandResultEnum::FAILURE;
             }
             folder = getPath(m_cdir);
@@ -85,7 +87,7 @@ PromptCommandResultEnum Prompt::fnCd(const PromptCommand &_cmd)
         } else {
             if (folder.back() != '/' && _cmd.getArgs().front().front() != '/')
                 folder += "/";
-            folder += _cmd.getArgs().front();
+            folder += directory;
         }
         stat = m_fs.stat(folder);
         if (stat.isFolder) {
@@ -99,15 +101,16 @@ PromptCommandResultEnum Prompt::fnCd(const PromptCommand &_cmd)
                 m_cdir = "/";
             }
         } else {
-            m_os << "cd: " << _cmd.getArgs().front() << ": Not a directory" << std::endl;
+            m_os << "cd: " << directory << ": Not a directory" << std::endl;
+            return PromptCommandResultEnum::FAILURE;
         }
+        return PromptCommandResultEnum::SUCCESS;
     } catch (std::exception &_e) {
         std::ignore = _e;
 
-        m_os << "cd: " << _cmd.getArgs().front() << ": No such file or directory" << std::endl;
+        m_os << "cd: " << directory << ": No such file or directory" << std::endl;
         return PromptCommandResultEnum::FAILURE;
     }
-    return static_cast<PromptCommandResultEnum>(stat.isFolder);
 }
 
 PromptCommandResultEnum Prompt::fnLs(const PromptCommand &_cmd)
@@ -130,8 +133,15 @@ PromptCommandResultEnum Prompt::fnLs(const PromptCommand &_cmd)
             } try {
             if (narg > 1)
                 m_os << _path << ":" << std::endl;
-            dir = m_cdir + _path;
-            for (auto &_file : m_fs.list(m_cdir + dir))
+            if (strcmp(stat.path, "/")) {
+                if (!strlen(stat.path)) dir = "/";
+                for (size_t it = 0; stat.path[it]; it++) dir += stat.path[it];
+                if (strlen(stat.path)) dir += "/";
+                for (size_t it = 0; stat.name[it]; it++) dir += stat.name[it];
+            } else {
+                dir = "/";
+            }
+            for (auto &_file : m_fs.list(dir))
                 m_os << _file.name << '\t';
             m_os << std::endl;
             if (narg > 1)
@@ -241,7 +251,7 @@ PromptCommandResultEnum Prompt::fnCat(const PromptCommand &_cmd)
         fd = m_fs.open(m_cdir + "/" +_path); // check for fd == -1
         data.resize(stat.size);
         readlen = m_fs.read(fd, data.data(), stat.size);
-	    m_os << data;
+	    m_os << data << std::endl;
         m_fs.close(fd);
     	if (!readlen)
             ret = PromptCommandResultEnum::FAILURE;
@@ -361,7 +371,7 @@ PromptCommandResultEnum Prompt::fnEcho(const PromptCommand &_cmd)
         m_os << "Concatenate DATA(s) to FILE." << std::endl;
         return PromptCommandResultEnum::SUCCESS;
     }
-	if (_cmd.getArgs().size() != 2)
+	if (_cmd.getArgs().size() < 2)
         return PromptCommandResultEnum::FAILURE;
     path = _cmd.getArgs().front();
     try {
@@ -373,11 +383,11 @@ PromptCommandResultEnum Prompt::fnEcho(const PromptCommand &_cmd)
         return PromptCommandResultEnum::FAILURE;
     }
     if (stat.isFolder) {
-        m_os << path << ": is a directory" << std::endl;
+        m_os << "echo: " << path << ": is a directory" << std::endl;
         return PromptCommandResultEnum::FAILURE;
     }
     fd = m_fs.open(m_cdir + "/" + path);
-    m_fs.write(fd, (void *)_cmd.getArgs().back().data(), _cmd.getArgs().back().size());
+    m_fs.write(fd, (void *)_cmd.getArgs().at(1).data(), _cmd.getArgs().at(1).size());
     m_fs.close(fd);
     return PromptCommandResultEnum::SUCCESS;
 }

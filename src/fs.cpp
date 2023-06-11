@@ -11,7 +11,6 @@
 FileSystem::FileSystem(vd_size_t nb_block, vd_size_t block_len)
     : vd(virtualDisk(nb_block, block_len))
 {
-    std::cout << "Creating new Filesystem with " << nb_block << " different blocks with a size of " << block_len * DEFAULT_BLOCK_LEN << " each." << std::endl;
     _magicBlock._nb_blocks = nb_block;
     _magicBlock._blocks_size = block_len * DEFAULT_BLOCK_LEN;
 
@@ -47,6 +46,12 @@ bool FileSystem::createFolder(std::string filename)
     path = (path == name) ? "." : path;
 
     dirData_t parentFolder = getFolder(path);
+    for (auto it = parentFolder.files.begin(); it != parentFolder.files.end(); it++) {
+        auto file_tmp = __getFile(*it);
+        if (file_tmp.name == name) {
+            return false;
+        }
+    }
     dirData_t folder;
 
     std::strncpy(folder.path, path.c_str(), 127);
@@ -74,6 +79,12 @@ bool FileSystem::create(std::string filename)
     path = (path == name) ? "." : path;
 
     dirData_t parentFolder = getFolder(path);
+    for (auto it = parentFolder.files.begin(); it != parentFolder.files.end(); it++) {
+        auto file_tmp = __getFile(*it);
+        if (file_tmp.name == name) {
+            return false;
+        }
+    }
     fileData_t file;
 
     std::strncpy(file.name, name.c_str(), 127);
@@ -257,10 +268,11 @@ vd_size_t FileSystem::write(vd_size_t fd, void *ptr, vd_size_t len)
 
     if (file.block[0] == VD_NAN)
         return 0;
+        
+    file.size = len;
 
     len = std::min(len + sizeof(fileData_t), _magicBlock._blocks_size * MAX_NUMBER_BLOCK - sizeof(fileData_t));
 
-    file.size = len;
 
     len -= sizeof(fileData_t);
     tmpLen = std::min(_magicBlock._blocks_size - sizeof(fileData_t), len);

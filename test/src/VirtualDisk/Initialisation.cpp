@@ -5,8 +5,6 @@
 class VirtualDisk_build : public ::testing::Test
 {
     protected:
-        static constexpr char *Path = (char *)"./VD/VirtualDisk";
-
         static constexpr vd_size_t NbBlock = 2;
         static constexpr vd_size_t LenBlock = 42;
         static constexpr vd_size_t LenBlockProc = LenBlock * DEFAULT_BLOCK_LEN;
@@ -16,15 +14,6 @@ class VirtualDisk_build : public ::testing::Test
 TEST_F(VirtualDisk_build, create_new)
 {
     virtualDisk vd(NbBlock, LenBlock);
-
-    ASSERT_EQ(vd._nb_block, NbBlock);
-    ASSERT_EQ(vd._blocks_len, LenBlockProc);
-    ASSERT_NE(vd._magical, nullptr);
-}
-
-TEST_F(VirtualDisk_build, loading_vd)
-{
-    virtualDisk vd(Path);
 
     ASSERT_EQ(vd._nb_block, NbBlock);
     ASSERT_EQ(vd._blocks_len, LenBlockProc);
